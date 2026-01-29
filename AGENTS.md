@@ -8,7 +8,7 @@ Automate building internal gems from source and caching them in a local Geminabo
 
 ## Architecture
 
-- Ruby gem with CLI executable
+- Ruby gem with CLI executable (`exe/gemkeeper`)
 - YAML config for gem repository definitions
 - Git operations to clone/pull internal repos
 - Build gems at specified versions/tags
@@ -18,7 +18,9 @@ Automate building internal gems from source and caching them in a local Geminabo
 ## Config Example
 
 ```yaml
-geminabox_url: http://localhost:9292
+port: 9292
+repos_path: ./cache/repos
+gems_path: ./cache/gems
 
 gems:
   - repo: git@github.com:company/internal-gem-1.git
@@ -27,12 +29,24 @@ gems:
     version: v2.3.1
 ```
 
-## CLI Commands (planned)
+## CLI Commands
 
-- `gemkeeper sync` - Build and upload all gems
+- `gemkeeper version` - Print version
+- `gemkeeper server start` - Start Geminabox server
+- `gemkeeper server stop` - Stop Geminabox server
+- `gemkeeper server status` - Check server status
+- `gemkeeper sync` - Build and upload all configured gems
 - `gemkeeper sync <gem-name>` - Sync specific gem
-- `gemkeeper list` - Show cached gems
+- `gemkeeper list` - Show locally uploaded gems
+
+## Development
+
+```bash
+bundle install
+bundle exec rake test    # Run tests
+bundle exec rubocop      # Run linter
+```
 
 ## Current Status
 
-Early development - scaffolding phase
+v1 complete - all core functionality implemented
