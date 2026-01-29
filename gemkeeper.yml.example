@@ -1,0 +1,26 @@
+# Gemkeeper configuration file
+# Copy this to gemkeeper.yml and modify as needed
+
+# Server port (default: 9292)
+port: 9292
+
+# Path for cloned repositories (default: ./cache/repos)
+repos_path: ./cache/repos
+
+# Path for Geminabox gem storage (default: ./cache/gems)
+gems_path: ./cache/gems
+
+# List of internal gems to sync
+gems:
+  # Sync the latest version from the main/master branch
+  - repo: git@github.com:company/internal-gem.git
+    version: latest
+
+  # Sync a specific tag or branch
+  - repo: git@github.com:company/another-gem.git
+    version: v2.3.1
+
+  # Override the gem name if it differs from the repo name
+  - repo: git@github.com:company/ruby-mylib.git
+    name: mylib
+    version: latest
