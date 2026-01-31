@@ -9,15 +9,16 @@ Gem::Specification.new do |spec|
   spec.email = ["dan.brubaker.horst@gmail.com"]
 
   spec.summary = "Manage offline development with private gem dependencies"
-  spec.description = "A CLI tool for building internal gems from source and caching them " \
-                     "in a local Geminabox server for offline Rails development."
-  spec.homepage = "https://github.com/dbh/gemkeeper"
+  spec.description = "An opinionated wrapper around Gem in a Box to manage private " \ 
+                     "gems in a development environment."
+  spec.homepage = "https://github.com/danhorst/gemkeeper"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.1.0"
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = spec.homepage
   spec.metadata["changelog_uri"] = "#{spec.homepage}/blob/main/CHANGELOG.md"
+  spec.metadata["rubygems_mfa_required"] = "true"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
