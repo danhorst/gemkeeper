@@ -1,6 +1,6 @@
 # Gemkeeper
 
-An opinionated wrapper around [Gem in a Box](https://github.com/geminabox/geminabox) for managing private gem dependencies in offline development environments.
+This project is an opinionated wrapper around [Gem in a Box][1] for managing private gem dependencies in an offline development environment.
 
 ## Installation
 
@@ -10,12 +10,14 @@ An opinionated wrapper around [Gem in a Box](https://github.com/geminabox/gemina
 gem install gemkeeper
 ```
 
-### Via Homebrew (macOS)
+### Via Homebrew (MacOS)
 
 ```bash
 brew tap danhorst/gemkeeper
 brew install gemkeeper
 ```
+
+Forumla: [`danhorst/homebrew-gemkeeper`](https://github.com/danhorst/homebrew-gemkeeper)
 
 ## Quick Start
 
@@ -168,12 +170,12 @@ gemkeeper server stop
 
 ## How It Works
 
-1. **Clone/Pull**: Gemkeeper clones (or pulls) gem repositories to a local cache
-2. **Build**: Builds `.gem` files from the source at the specified version/tag
-3. **Upload**: Uploads built gems to a local Geminabox server
-4. **Proxy**: Geminabox proxies public gems from RubyGems.org, so you only need one gem source
+1. **Clone/Pull**: Gemkeeper clones (or pulls) gem repositories to a local cache.
+2. **Build**: Builds `.gem` files from the source at the specified version/tag.
+3. **Upload**: Uploads built gems to a local Geminabox server.
+4. **Proxy**: Geminabox proxies public gems from RubyGems.org, so you only need one gem source.
 
-This allows offline Rails development with private gems when disconnected from VPN.
+This lets you use a combination of public and private gems from a single gem source.
 
 ## Development
 
@@ -183,6 +185,4 @@ bundle exec rake test    # Run tests
 bundle exec rubocop      # Run linter
 ```
 
-## License
-
-MIT License. See [LICENSE.txt](LICENSE.txt).
+[1]: https://github.com/geminabox/geminabox
