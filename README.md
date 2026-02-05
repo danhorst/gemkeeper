@@ -1,4 +1,4 @@
-# Gemkeeper
+![Gemkeeper](./img/gemkeeper.jpeg)
 
 This project is an opinionated wrapper around [Gem in a Box][1] for managing private gem dependencies in an offline development environment.
 
@@ -17,7 +17,7 @@ brew tap danhorst/gemkeeper
 brew install gemkeeper
 ```
 
-Forumla: [`danhorst/homebrew-gemkeeper`](https://github.com/danhorst/homebrew-gemkeeper)
+Forumla: [`danhorst/homebrew-gemkeeper`][2]
 
 ## Quick Start
 
@@ -186,3 +186,4 @@ bundle exec rubocop      # Run linter
 ```
 
 [1]: https://github.com/geminabox/geminabox
+[2]: https://github.com/danhorst/homebrew-gemkeeper
