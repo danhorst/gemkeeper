@@ -1,7 +1,13 @@
+plugins:
+  - rubocop-performance
+
 AllCops:
   TargetRubyVersion: 3.1
   NewCops: enable
   SuggestExtensions: false
+  Exclude:
+    - cache/**/*
+    - vendor/**/*
 
 Style/StringLiterals:
   EnforcedStyle: double_quotes
@@ -17,3 +23,7 @@ Metrics/MethodLength:
 
 Metrics/AbcSize:
   Max: 40
+
+Metrics/ClassLength:
+  Exclude:
+    - test/**/*
