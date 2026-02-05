@@ -90,7 +90,7 @@ module Gemkeeper
 
     def start_server
       cmd = [
-        "bundle", "exec", "rackup",
+        "rackup",
         config.config_ru_path,
         "-p", config.port.to_s,
         "-D",
@@ -110,7 +110,7 @@ module Gemkeeper
 
     def start_server_foreground
       cmd = [
-        "bundle", "exec", "rackup",
+        "rackup",
         config.config_ru_path,
         "-p", config.port.to_s,
         "-s", "puma"
