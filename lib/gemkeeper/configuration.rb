@@ -7,12 +7,24 @@ module Gemkeeper
   class Configuration
     DEFAULT_PORT = 9292
     DEFAULT_CONFIG_FILENAME = "gemkeeper.yml"
-    USER_CONFIG_PATH = File.expand_path("~/.config/gemkeeper/config.yml")
+
+    # Config file lookup paths in order of priority
+    CONFIG_PATHS = [
+      -> { File.join(Dir.pwd, DEFAULT_CONFIG_FILENAME) },              # ./gemkeeper.yml
+      -> { File.expand_path("~/.config/gemkeeper/config.yml") },       # XDG config
+      -> { File.expand_path("~/.gemkeeper.yml") },                     # Home directory
+      -> { "/usr/local/etc/gemkeeper.yml" },                           # Homebrew (Intel)
+      -> { "/opt/homebrew/etc/gemkeeper.yml" }                         # Homebrew (Apple Silicon)
+    ].freeze
 
     attr_reader :port, :repos_path, :gems_path, :pid_file, :gems
 
     def self.load(config_path = nil)
       new(config_path)
+    end
+
+    def self.config_search_paths
+      CONFIG_PATHS.map { |p| p.is_a?(Proc) ? p.call : p }
     end
 
     def initialize(config_path = nil)
@@ -40,11 +52,7 @@ module Gemkeeper
     private
 
     def find_config_file
-      local_config = File.join(Dir.pwd, DEFAULT_CONFIG_FILENAME)
-      return local_config if File.exist?(local_config)
-      return USER_CONFIG_PATH if File.exist?(USER_CONFIG_PATH)
-
-      nil
+      self.class.config_search_paths.find { |path| File.exist?(path) }
     end
 
     def load_config

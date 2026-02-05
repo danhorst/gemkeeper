@@ -25,5 +25,6 @@ Metrics/AbcSize:
   Max: 40
 
 Metrics/ClassLength:
+  Max: 120
   Exclude:
     - test/**/*

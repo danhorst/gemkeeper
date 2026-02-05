@@ -18,6 +18,13 @@ module Gemkeeper
       start_server
     end
 
+    def start_foreground
+      raise ServerAlreadyRunningError, "Server is already running (PID: #{read_pid})" if running?
+
+      generate_config_ru
+      start_server_foreground
+    end
+
     def stop
       raise ServerNotRunningError, "Server is not running" unless running?
 
@@ -99,6 +106,19 @@ module Gemkeeper
 
       # Wait for server to be ready
       wait_for_server
+    end
+
+    def start_server_foreground
+      cmd = [
+        "bundle", "exec", "rackup",
+        config.config_ru_path,
+        "-p", config.port.to_s,
+        "-s", "puma"
+      ]
+
+      Dir.chdir(config.cache_dir) do
+        system(*cmd)
+      end
     end
 
     def wait_for_server(timeout: 10)
