@@ -93,4 +93,12 @@ class TestCLIIntegration < Minitest::Test
       refute result[:status].success?
     end
   end
+
+  def test_server_start_help_shows_foreground_option
+    result = run_gemkeeper("server", "start", "--help")
+
+    assert_match(/foreground/, result[:stdout])
+    assert_match(/-f/, result[:stdout])
+    assert_match(/don't daemonize/, result[:stdout])
+  end
 end

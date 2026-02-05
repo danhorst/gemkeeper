@@ -118,4 +118,13 @@ class TestConfiguration < Minitest::Test
 
     assert_equal "custom_name", config.gems[0].name
   end
+
+  def test_config_search_paths_returns_expected_locations
+    paths = Gemkeeper::Configuration.config_search_paths
+
+    assert_kind_of Array, paths
+    assert paths.length >= 3
+    assert(paths.any? { |p| p.end_with?("gemkeeper.yml") })
+    assert(paths.any? { |p| p.include?(".config/gemkeeper") })
+  end
 end
