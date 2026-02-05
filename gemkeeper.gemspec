@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.email = ["dan.brubaker.horst@gmail.com"]
 
   spec.summary = "Manage offline development with private gem dependencies"
-  spec.description = "An opinionated wrapper around Gem in a Box to manage private " \ 
+  spec.description = "An opinionated wrapper around Gem in a Box to manage private " \
                      "gems in a development environment."
   spec.homepage = "https://github.com/danhorst/gemkeeper"
   spec.license = "MIT"
