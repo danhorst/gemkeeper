@@ -107,13 +107,11 @@ module Gemkeeper
         stdout, = run_git("branch", "-r")
         remotes = stdout.lines.map(&:strip)
 
-        if remotes.any? { |r| r =~ %r{origin/main$} }
-          "main"
-        elsif remotes.any? { |r| r =~ %r{origin/master$} }
-          "master"
-        else
-          raise GitError, "Cannot detect trunk branch (no main or master found)"
+        %w[main master].each do |branch|
+          return branch if remotes.any? { |remote| remote.end_with?("origin/#{branch}") }
         end
+
+        raise GitError, "Cannot detect trunk branch (no main or master found)"
       end
     end
 

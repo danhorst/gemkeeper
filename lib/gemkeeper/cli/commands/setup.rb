@@ -94,7 +94,8 @@ module Gemkeeper
 
           # Build a lookup for new entries by repo
           new_by_name = matched_gems.to_h do |gem_entry|
-            [gem_entry[:name], { "repo" => gem_entry[:repo], "version" => "from_lockfile" }]
+            entry_name = gem_entry[:name]
+            [entry_name, { "repo" => gem_entry[:repo], "version" => "from_lockfile" }]
           end
 
           # Update existing entries for matched gems, keep others untouched

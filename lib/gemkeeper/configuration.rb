@@ -24,7 +24,7 @@ module Gemkeeper
     end
 
     def self.config_search_paths
-      CONFIG_PATHS.map { |p| p.is_a?(Proc) ? p.call : p }
+      CONFIG_PATHS.map(&:call)
     end
 
     def initialize(config_path = nil)
@@ -70,7 +70,7 @@ module Gemkeeper
       @repos_path = File.expand_path(@config.fetch(:repos_path, "./cache/repos"))
       @gems_path = File.expand_path(@config.fetch(:gems_path, "./cache/gems"))
       @pid_file = File.expand_path(@config.fetch(:pid_file, "./cache/gemkeeper.pid"))
-      @gems = (@config[:gems] || []).map { |g| GemDefinition.new(g) }
+      @gems = (@config[:gems] || []).map { |gem_config| GemDefinition.new(gem_config) }
 
       FileUtils.mkdir_p(@repos_path)
       FileUtils.mkdir_p(@gems_path)

@@ -20,12 +20,13 @@ module Gemkeeper
         private
 
         def select_gems(config, gem_name)
-          if config.gems.empty?
+          all_gems = config.gems
+          if all_gems.empty?
             warn "No gems configured. Add gems to your gemkeeper.yml file."
             exit 1
           end
 
-          gems = gem_name ? config.gems.select { |gem| gem.name == gem_name } : config.gems
+          gems = gem_name ? all_gems.select { |gem| gem.name == gem_name } : all_gems
 
           if gems.empty?
             warn "No matching gem found: #{gem_name}"
@@ -86,16 +87,17 @@ module Gemkeeper
         def resolve_version(gem_def)
           return gem_def.version unless gem_def.from_lockfile?
 
+          name = gem_def.name
           lockfile_path = LockfileParser.find
           unless lockfile_path
             raise GitError,
-                  "version: from_lockfile for #{gem_def.name} — no Gemfile.lock found in " \
+                  "version: from_lockfile for #{name} — no Gemfile.lock found in " \
                   "#{Dir.pwd} or any parent directory"
           end
 
           versions = LockfileParser.parse(lockfile_path)
-          version = versions[gem_def.name]
-          raise GitError, "#{gem_def.name} not found in #{lockfile_path}" unless version
+          version = versions[name]
+          raise GitError, "#{name} not found in #{lockfile_path}" unless version
 
           version
         end
