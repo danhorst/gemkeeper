@@ -20,12 +20,29 @@ module Gemkeeper
       end
     end
 
+    SAFE_REF_PATTERN = /\A[a-zA-Z0-9._-]+\z/
+
     def checkout_version(version)
       if version == "latest"
         checkout_trunk
       else
+        validate_ref!(version)
         checkout_ref(version)
       end
+    end
+
+    def checkout_resolved_version(version)
+      validate_ref!(version)
+      Dir.chdir(@local_path) do
+        run_git("fetch", "--all", "--tags")
+        begin
+          run_git("checkout", "v#{version}")
+        rescue GitError
+          run_git("checkout", version)
+        end
+      end
+    rescue GitError
+      raise GitError, "Could not find tag v#{version} or #{version} in #{@repo_url}"
     end
 
     def current_version
@@ -70,6 +87,12 @@ module Gemkeeper
         run_git("checkout", trunk)
         run_git("pull", "origin", trunk)
       end
+    end
+
+    def validate_ref!(ref)
+      return if ref.match?(SAFE_REF_PATTERN)
+
+      raise GitError, "Unsafe ref rejected: #{ref.inspect} — must match [a-zA-Z0-9._-]"
     end
 
     def checkout_ref(ref)

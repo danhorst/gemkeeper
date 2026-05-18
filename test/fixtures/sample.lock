@@ -1,0 +1,33 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    actioncable (7.0.4)
+      actionpack (= 7.0.4)
+      activesupport (= 7.0.4)
+    actionpack (7.0.4)
+      actionview (= 7.0.4)
+    actionview (7.0.4)
+    activesupport (7.0.4)
+    internal-gem-one (1.2.3)
+    internal-gem-two (0.9.0)
+      activesupport (>= 6.0)
+    rack (2.2.7)
+
+GIT
+  remote: git@github.com:company/git-sourced-gem.git
+  revision: abc1234
+  specs:
+    git-sourced-gem (1.0.0)
+
+PLATFORMS
+  arm64-darwin-23
+  ruby
+
+DEPENDENCIES
+  actioncable
+  internal-gem-one
+  internal-gem-two
+  git-sourced-gem!
+
+BUNDLED WITH
+   2.4.10

@@ -19,6 +19,55 @@ brew install gemkeeper
 
 Forumla: [`danhorst/homebrew-gemkeeper`][2]
 
+## Contractor Setup
+
+If you are a contractor who cannot reach your organization's private gem server, follow these steps to use gemkeeper as a local proxy.
+
+**Prerequisites:** You must have HTTPS access to the internal gem repositories on GitHub.
+Configure GitHub credentials before step 4 — see [GitHub authentication docs][3].
+
+1. Install gemkeeper:
+
+```bash
+gem install gemkeeper
+```
+
+2. Install your org's gem manifest:
+
+Your organization should provide a command or file that writes `~/.config/gemkeeper/manifest.yml`.
+This manifest lists the internal gems and their GitHub URLs, and may include the private gem source URL used in step 6.
+
+3. Generate a `gemkeeper.yml` for your project:
+
+```bash
+gemkeeper setup path/to/Gemfile.lock
+```
+
+This reads the lockfile, cross-references the manifest, and writes a `gemkeeper.yml` in the current directory.
+It also prints the `bundle config` command you will need in step 6.
+
+4. Build and cache the internal gems:
+
+```bash
+gemkeeper sync
+```
+
+5. Start the local gem server:
+
+```bash
+gemkeeper server start
+```
+
+6. Point Bundler at the local server using the command printed by step 3:
+
+```bash
+bundle config set --local mirror.<your-private-gem-source-url> http://localhost:9292
+```
+
+Replace `<your-private-gem-source-url>` with the gem source URL declared in your `Gemfile` (the one that requires VPN or private credentials).
+The mirror approach redirects gem resolution to your local Geminabox without modifying the committed `Gemfile` or `Gemfile.lock`.
+Public gems are proxied from RubyGems.org automatically.
+
 ## Quick Start
 
 1. Create a configuration file at `~/.config/gemkeeper/config.yml`:
@@ -26,7 +75,7 @@ Forumla: [`danhorst/homebrew-gemkeeper`][2]
 ```yaml
 port: 9292
 gems:
-  - repo: git@github.com:company/internal-gem.git
+  - repo: https://github.com/company/internal-gem
     version: latest
 ```
 
@@ -78,13 +127,17 @@ pid_file: ./cache/gemkeeper.pid
 
 # List of gems to manage
 gems:
-  - repo: git@github.com:company/gem-one.git
+  # HTTPS is recommended — works without SSH key setup (alternative: git@github.com:company/gem-one.git)
+  - repo: https://github.com/company/gem-one
     version: latest    # Use the latest commit on main/master
 
-  - repo: git@github.com:company/gem-two.git
+  - repo: https://github.com/company/gem-two
     version: v1.2.3    # Use a specific tag
 
-  - repo: git@github.com:company/ruby-gem-three.git
+  - repo: https://github.com/company/gem-two
+    version: from_lockfile    # Read version from the nearest Gemfile.lock
+
+  - repo: https://github.com/company/ruby-gem-three
     name: gem-three    # Override the gem name (strips "ruby-" prefix by default)
 ```
 
@@ -108,6 +161,19 @@ gemkeeper server stop
 
 # Check server status
 gemkeeper server status
+```
+
+### Project Setup
+
+```bash
+# Generate gemkeeper.yml from a Gemfile.lock and org manifest
+gemkeeper setup path/to/Gemfile.lock
+
+# Use a custom manifest path
+gemkeeper setup path/to/Gemfile.lock --manifest ~/.config/myorg/manifest.yml
+
+# Overwrite existing gemkeeper.yml entirely
+gemkeeper setup path/to/Gemfile.lock --force
 ```
 
 ### Gem Synchronization
@@ -187,3 +253,4 @@ bundle exec rubocop      # Run linter
 
 [1]: https://github.com/geminabox/geminabox
 [2]: https://github.com/danhorst/homebrew-gemkeeper
+[3]: https://docs.github.com/en/authentication

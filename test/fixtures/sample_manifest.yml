@@ -1,0 +1,7 @@
+gems:
+  - name: internal-gem-one
+    repo: https://github.com/company/internal-gem-one
+  - name: internal-gem-two
+    repo: https://github.com/company/internal-gem-two
+  - name: other-internal-gem
+    repo: https://github.com/company/other-internal-gem

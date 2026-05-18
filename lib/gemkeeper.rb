@@ -3,6 +3,8 @@
 require_relative "gemkeeper/version"
 require_relative "gemkeeper/errors"
 require_relative "gemkeeper/configuration"
+require_relative "gemkeeper/lockfile_parser"
+require_relative "gemkeeper/manifest_reader"
 require_relative "gemkeeper/git_repository"
 require_relative "gemkeeper/gem_builder"
 require_relative "gemkeeper/gem_uploader"

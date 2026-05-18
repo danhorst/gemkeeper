@@ -13,6 +13,7 @@ module Gemkeeper
 end
 
 require_relative "cli/commands/version"
+require_relative "cli/commands/setup"
 require_relative "cli/commands/sync"
 require_relative "cli/commands/list"
 require_relative "cli/commands/server/start"

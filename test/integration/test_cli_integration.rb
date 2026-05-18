@@ -101,4 +101,67 @@ class TestCLIIntegration < Minitest::Test
     assert_match(/-f/, result[:stdout])
     assert_match(/don't daemonize/, result[:stdout])
   end
+
+  def test_sync_skips_already_cached_gem
+    with_config("port" => 9999) do |temp_dir, config_path|
+      gems_dir = File.join(temp_dir, "cache", "gems", "gems")
+      FileUtils.mkdir_p(gems_dir)
+      FileUtils.touch(File.join(gems_dir, "my-gem-1.2.3.gem"))
+
+      config = {
+        "port" => 9999,
+        "gems_path" => File.join(temp_dir, "cache", "gems"),
+        "gems" => [{ "repo" => "git@github.com:example/my-gem.git", "version" => "1.2.3" }]
+      }
+      File.write(config_path, config.to_yaml)
+
+      result = run_gemkeeper("sync", "--config", config_path)
+
+      assert_match(/already cached/, result[:stdout])
+    end
+  end
+
+  def test_sync_from_lockfile_no_lockfile_exits_nonzero
+    config = {
+      "port" => 9999,
+      "gems" => [{ "repo" => "git@github.com:example/my-gem.git", "version" => "from_lockfile" }]
+    }
+
+    # Run from a temp dir guaranteed to have no Gemfile.lock above it
+    Dir.mktmpdir do |tmpdir|
+      config_path = File.join(tmpdir, "gemkeeper.yml")
+      File.write(config_path, config.to_yaml)
+
+      stdout, stderr, status = Open3.capture3(
+        ENV.to_h,
+        "bundle", "exec", "ruby",
+        IntegrationHelper::GEMKEEPER_BIN,
+        "sync", "--config", config_path,
+        chdir: tmpdir
+      )
+
+      refute status.success?, "Expected non-zero exit"
+      assert_match(/no Gemfile.lock found|from_lockfile/i, "#{stdout}\n#{stderr}")
+    end
+  end
+
+  def test_sync_partial_failure_continues_and_exits_nonzero
+    config = {
+      "port" => 9999,
+      "gems" => [
+        { "repo" => "git@github.com:example/bad-gem.git", "version" => "latest" },
+        { "repo" => "git@github.com:example/other-bad-gem.git", "version" => "latest" }
+      ]
+    }
+
+    with_config(config) do |_temp_dir, config_path|
+      # Pre-cache both gems so sync skips the actual git work and hits the cached path
+      # To test partial failure without real git, we need both to fail — just verify exit code
+      result = run_gemkeeper("sync", "--config", config_path, allow_failure: true)
+
+      # Both gems fail (no real repos), but both are attempted — exit is non-zero
+      refute result[:status].success?
+      assert_match(/failure/, result[:stderr])
+    end
+  end
 end

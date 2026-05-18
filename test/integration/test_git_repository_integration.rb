@@ -101,6 +101,8 @@ class TestGitRepositoryIntegration < Minitest::Test
       system("git", "init", "-b", "main", out: File::NULL, err: File::NULL)
       system("git", "config", "user.email", "test@example.com", out: File::NULL, err: File::NULL)
       system("git", "config", "user.name", "Test User", out: File::NULL, err: File::NULL)
+      system("git", "config", "commit.gpgSign", "false", out: File::NULL, err: File::NULL)
+      system("git", "config", "tag.gpgSign", "false", out: File::NULL, err: File::NULL)
 
       # Create a gemspec
       File.write("test.gemspec", <<~RUBY)
@@ -129,6 +131,7 @@ class TestGitRepositoryIntegration < Minitest::Test
     Dir.chdir(work_dir) do
       system("git", "config", "user.email", "test@example.com", out: File::NULL, err: File::NULL)
       system("git", "config", "user.name", "Test User", out: File::NULL, err: File::NULL)
+      system("git", "config", "commit.gpgSign", "false", out: File::NULL, err: File::NULL)
       File.write("new_file.txt", message)
       system("git", "add", ".", out: File::NULL, err: File::NULL)
       system("git", "commit", "-m", message, out: File::NULL, err: File::NULL)
@@ -145,6 +148,7 @@ class TestGitRepositoryIntegration < Minitest::Test
     Dir.chdir(work_dir) do
       system("git", "config", "user.email", "test@example.com", out: File::NULL, err: File::NULL)
       system("git", "config", "user.name", "Test User", out: File::NULL, err: File::NULL)
+      system("git", "config", "tag.gpgSign", "false", out: File::NULL, err: File::NULL)
       system("git", "tag", tag_name, out: File::NULL, err: File::NULL)
       system("git", "push", "--tags", out: File::NULL, err: File::NULL)
     end

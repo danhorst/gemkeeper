@@ -127,4 +127,48 @@ class TestConfiguration < Minitest::Test
     assert(paths.any? { |p| p.end_with?("gemkeeper.yml") })
     assert(paths.any? { |p| p.include?(".config/gemkeeper") })
   end
+
+  def test_from_lockfile_version_recognized
+    File.write("gemkeeper.yml", <<~YAML)
+      gems:
+        - repo: git@github.com:company/my-gem.git
+          version: from_lockfile
+    YAML
+
+    config = Gemkeeper::Configuration.load
+    gem_def = config.gems[0]
+
+    assert gem_def.from_lockfile?
+    refute gem_def.latest?
+  end
+
+  def test_invalid_version_raises_error
+    File.write("gemkeeper.yml", <<~YAML)
+      gems:
+        - repo: git@github.com:company/my-gem.git
+          version: "--upload-pack=evil"
+    YAML
+
+    assert_raises(Gemkeeper::InvalidConfigError) do
+      Gemkeeper::Configuration.load
+    end
+  end
+
+  def test_valid_tag_versions_accepted
+    File.write("gemkeeper.yml", <<~YAML)
+      gems:
+        - repo: git@github.com:company/gem-a.git
+          version: v1.2.3
+        - repo: git@github.com:company/gem-b.git
+          version: 2.0.0-rc1
+        - repo: git@github.com:company/gem-c.git
+          version: "1.0"
+    YAML
+
+    config = Gemkeeper::Configuration.load
+
+    assert_equal 3, config.gems.size
+    assert_equal "v1.2.3", config.gems[0].version
+    assert_equal "2.0.0-rc1", config.gems[1].version
+  end
 end

@@ -77,19 +77,36 @@ module Gemkeeper
     end
 
     class GemDefinition
+      VALID_VERSION_PATTERN = /\A[a-zA-Z0-9._-]+\z/
+      RESERVED_VERSIONS = %w[latest from_lockfile].freeze
+
       attr_reader :repo, :version, :name
 
       def initialize(config)
         @repo = config[:repo] or raise InvalidConfigError, "Gem definition missing 'repo'"
         @version = config[:version] || "latest"
         @name = config[:name] || extract_name_from_repo
+        validate_version!
       end
 
       def latest?
         @version == "latest"
       end
 
+      def from_lockfile?
+        @version == "from_lockfile"
+      end
+
       private
+
+      def validate_version!
+        return if RESERVED_VERSIONS.include?(@version)
+        return if @version.match?(VALID_VERSION_PATTERN)
+
+        raise InvalidConfigError,
+              "Invalid version #{@version.inspect} for gem #{@name.inspect} — " \
+              "must be \"latest\", \"from_lockfile\", or a tag string matching [a-zA-Z0-9._-]"
+      end
 
       def extract_name_from_repo
         File.basename(@repo, ".git").sub(/^ruby-/, "")

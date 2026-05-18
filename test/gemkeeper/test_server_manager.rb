@@ -61,4 +61,22 @@ class TestServerManager < Minitest::Test
       manager.stop
     end
   end
+
+  def test_start_server_command_binds_to_localhost
+    manager = Gemkeeper::ServerManager.new(@config)
+    cmd = manager.send(:build_start_cmd)
+
+    assert_includes cmd, "--host"
+    host_index = cmd.index("--host")
+    assert_equal "127.0.0.1", cmd[host_index + 1]
+  end
+
+  def test_start_server_foreground_command_binds_to_localhost
+    manager = Gemkeeper::ServerManager.new(@config)
+    cmd = manager.send(:build_foreground_cmd)
+
+    assert_includes cmd, "--host"
+    host_index = cmd.index("--host")
+    assert_equal "127.0.0.1", cmd[host_index + 1]
+  end
 end

@@ -67,4 +67,28 @@ class TestGitRepository < Minitest::Test
 
     assert_equal "2.0.0", repo.current_version
   end
+
+  def test_checkout_version_rejects_unsafe_ref
+    repo = Gemkeeper::GitRepository.new(@repo_url, @local_path)
+
+    assert_raises(Gemkeeper::GitError) do
+      repo.checkout_version("--upload-pack=evil")
+    end
+  end
+
+  def test_checkout_version_rejects_ref_with_spaces
+    repo = Gemkeeper::GitRepository.new(@repo_url, @local_path)
+
+    assert_raises(Gemkeeper::GitError) do
+      repo.checkout_version("v1.0 injected")
+    end
+  end
+
+  def test_checkout_version_accepts_valid_refs
+    repo = Gemkeeper::GitRepository.new(@repo_url, @local_path)
+
+    # Validation passes — error raised is a filesystem or git error, not the ref-rejection error
+    err = assert_raises(StandardError) { repo.checkout_version("v1.2.3") }
+    refute_match(/Unsafe ref rejected/, err.message)
+  end
 end

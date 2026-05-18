@@ -88,15 +88,30 @@ module Gemkeeper
       File.write(config.config_ru_path, content)
     end
 
-    def start_server
-      cmd = [
+    def build_start_cmd
+      [
         "rackup",
         config.config_ru_path,
+        "--host", "127.0.0.1",
         "-p", config.port.to_s,
         "-D",
         "-P", config.pid_file,
         "-s", "puma"
       ]
+    end
+
+    def build_foreground_cmd
+      [
+        "rackup",
+        config.config_ru_path,
+        "--host", "127.0.0.1",
+        "-p", config.port.to_s,
+        "-s", "puma"
+      ]
+    end
+
+    def start_server
+      cmd = build_start_cmd
 
       Dir.chdir(config.cache_dir) do
         _stdout, stderr, status = Open3.capture3(*cmd)
@@ -109,15 +124,8 @@ module Gemkeeper
     end
 
     def start_server_foreground
-      cmd = [
-        "rackup",
-        config.config_ru_path,
-        "-p", config.port.to_s,
-        "-s", "puma"
-      ]
-
       Dir.chdir(config.cache_dir) do
-        system(*cmd)
+        system(*build_foreground_cmd)
       end
     end
 
