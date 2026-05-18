@@ -20,7 +20,7 @@ module IntegrationHelper
   end
 
   def run_gemkeeper(*args, env: {}, allow_failure: false)
-    cmd = ["bundle", "exec", "ruby", GEMKEEPER_BIN, *args]
+    cmd = [RbConfig.ruby, "-rbundler/setup", GEMKEEPER_BIN, *args]
     full_env = ENV.to_h.merge(env)
 
     stdout, stderr, status = Open3.capture3(full_env, *cmd, chdir: PROJECT_ROOT)
