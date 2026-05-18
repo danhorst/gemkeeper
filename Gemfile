@@ -14,3 +14,5 @@ gem "minitest", "~> 5.16"
 
 gem "rubocop", "~> 1.21"
 gem "rubocop-performance", "~> 1.20"
+
+gem "rubycritic", require: false

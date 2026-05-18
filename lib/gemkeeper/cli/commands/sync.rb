@@ -25,7 +25,7 @@ module Gemkeeper
             exit 1
           end
 
-          gems = gem_name ? config.gems.select { |g| g.name == gem_name } : config.gems
+          gems = gem_name ? config.gems.select { |gem| gem.name == gem_name } : config.gems
 
           if gems.empty?
             warn "No matching gem found: #{gem_name}"
@@ -49,24 +49,27 @@ module Gemkeeper
           return if failures.empty?
 
           warn "\nSync completed with #{failures.size} failure(s):"
-          failures.each { |f| warn "  #{f[:name]}: #{f[:message]}" }
+          failures.each { |failure| warn "  #{failure[:name]}: #{failure[:message]}" }
           exit 1
         end
 
         def sync_gem(gem_def, config, uploader)
+          name = gem_def.name
+          repo_url = gem_def.repo
+          gems_path = config.gems_path
           version = resolve_version(gem_def)
-          return if cached?(gem_def.name, version, config.gems_path)
+          return if cached?(name, version, gems_path)
 
-          puts "Syncing #{gem_def.name} @ #{version}..."
+          puts "Syncing #{name} @ #{version}..."
 
-          local_path = File.join(config.repos_path, gem_def.name)
-          repo = GitRepository.new(gem_def.repo, local_path)
+          local_path = File.join(config.repos_path, name)
+          repo = GitRepository.new(repo_url, local_path)
 
-          puts "  Fetching from #{gem_def.repo}..."
+          puts "  Fetching from #{repo_url}..."
           begin
             repo.clone_or_pull
           rescue GitError => e
-            raise auth_error?(e) ? auth_failure_error(gem_def.repo, e) : e
+            raise auth_error?(e) ? auth_failure_error(repo_url, e) : e
           end
 
           checkout_gem_version(repo, gem_def, version)

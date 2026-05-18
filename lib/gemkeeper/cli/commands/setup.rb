@@ -36,7 +36,8 @@ module Gemkeeper
 
         def match_gems(manifest, lockfile_versions)
           matched = manifest.gems.filter_map do |gem_entry|
-            { name: gem_entry[:name], repo: gem_entry[:repo] } if lockfile_versions.key?(gem_entry[:name])
+            name = gem_entry[:name]
+            { name: name, repo: gem_entry[:repo] } if lockfile_versions.key?(name)
           end
 
           warn_unmatched_internals(manifest, lockfile_versions)
@@ -46,7 +47,9 @@ module Gemkeeper
         def warn_unmatched_internals(manifest, lockfile_versions)
           lockfile_versions.each_key do |gem_name|
             next if manifest.find_by_name(gem_name)
-            next unless manifest.gem_names.any? { |n| n.split("-").first == gem_name.split("-").first }
+
+            gem_prefix = gem_name.split("-").first
+            next unless manifest.gem_names.any? { |manifest_name| manifest_name.split("-").first == gem_prefix }
 
             warn "Warning: #{gem_name} matches an internal name pattern but is not in the manifest — skipping"
           end
@@ -56,8 +59,8 @@ module Gemkeeper
           existing = load_existing_config(output_path) unless force
           existing ||= {}
 
-          gem_entries = matched_gems.map do |g|
-            { "repo" => g[:repo], "version" => "from_lockfile" }
+          gem_entries = matched_gems.map do |gem_entry|
+            { "repo" => gem_entry[:repo], "version" => "from_lockfile" }
           end
 
           config = if force || existing.empty?
@@ -87,11 +90,11 @@ module Gemkeeper
 
         def merge_config(existing, _new_gem_entries, matched_gems)
           existing_gems = existing["gems"] || []
-          matched_names = matched_gems.map { |g| g[:name] }
+          matched_names = matched_gems.map { |gem_entry| gem_entry[:name] }
 
           # Build a lookup for new entries by repo
-          new_by_name = matched_gems.to_h do |g|
-            [g[:name], { "repo" => g[:repo], "version" => "from_lockfile" }]
+          new_by_name = matched_gems.to_h do |gem_entry|
+            [gem_entry[:name], { "repo" => gem_entry[:repo], "version" => "from_lockfile" }]
           end
 
           # Update existing entries for matched gems, keep others untouched
@@ -115,10 +118,11 @@ module Gemkeeper
           config = load_existing_config(config_path) || {}
           port = config.fetch("port", Configuration::DEFAULT_PORT)
           local_url = "http://localhost:#{port}"
+          source_url = manifest.source_url
           puts ""
           puts "To point Bundler at your local Geminabox, run:"
-          if manifest.source_url
-            puts "  bundle config set --local mirror.#{manifest.source_url} #{local_url}"
+          if source_url
+            puts "  bundle config set --local mirror.#{source_url} #{local_url}"
           else
             puts "  bundle config set --local mirror.<your-private-gem-source-url> #{local_url}"
             puts "  (Replace <your-private-gem-source-url> with the gem source URL from your Gemfile)"

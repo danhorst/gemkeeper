@@ -20,11 +20,11 @@ module Gemkeeper
     end
 
     def gem_names
-      @gems.map { |g| g[:name] }
+      @gems.map { |gem_entry| gem_entry[:name] }
     end
 
     def find_by_name(name)
-      @gems.find { |g| g[:name] == name }
+      @gems.find { |gem_entry| gem_entry[:name] == name }
     end
 
     private
