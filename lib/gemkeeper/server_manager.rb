@@ -12,15 +12,13 @@ module Gemkeeper
     end
 
     def start
-      raise ServerAlreadyRunningError, "Server is already running (PID: #{read_pid})" if running?
-
+      ensure_not_running!
       generate_config_ru
       start_server
     end
 
     def start_foreground
-      raise ServerAlreadyRunningError, "Server is already running (PID: #{read_pid})" if running?
-
+      ensure_not_running!
       generate_config_ru
       start_server_foreground
     end
@@ -30,21 +28,10 @@ module Gemkeeper
 
       pid = read_pid
       Process.kill("TERM", pid)
-
-      # Wait for process to stop
-      10.times do
-        break unless process_alive?(pid)
-
-        sleep 0.5
-      end
-
-      # Force kill if still running
-      Process.kill("KILL", pid) if process_alive?(pid)
-
+      wait_for_process_exit(pid)
       cleanup_pid_file
       true
     rescue Errno::ESRCH
-      # Process already dead
       cleanup_pid_file
       true
     end
@@ -68,9 +55,14 @@ module Gemkeeper
 
     private
 
+    def ensure_not_running!
+      raise ServerAlreadyRunningError, "Server is already running (PID: #{read_pid})" if running?
+    end
+
     def generate_config_ru
+      gems_path = config.gems_path
       FileUtils.mkdir_p(config.cache_dir)
-      FileUtils.mkdir_p(config.gems_path)
+      FileUtils.mkdir_p(gems_path)
 
       content = <<~RUBY
         # frozen_string_literal: true
@@ -79,7 +71,7 @@ module Gemkeeper
         require "rubygems/indexer"
         require "geminabox"
 
-        Geminabox.data = #{config.gems_path.inspect}
+        Geminabox.data = #{gems_path.inspect}
         Geminabox.rubygems_proxy = true
 
         run Geminabox::Server
@@ -88,26 +80,16 @@ module Gemkeeper
       File.write(config.config_ru_path, content)
     end
 
+    def build_rackup_cmd(*extra)
+      ["rackup", config.config_ru_path, "--host", "127.0.0.1", "-p", config.port.to_s, "-s", "puma", *extra]
+    end
+
     def build_start_cmd
-      [
-        "rackup",
-        config.config_ru_path,
-        "--host", "127.0.0.1",
-        "-p", config.port.to_s,
-        "-D",
-        "-P", config.pid_file,
-        "-s", "puma"
-      ]
+      build_rackup_cmd("-D", "-P", config.pid_file)
     end
 
     def build_foreground_cmd
-      [
-        "rackup",
-        config.config_ru_path,
-        "--host", "127.0.0.1",
-        "-p", config.port.to_s,
-        "-s", "puma"
-      ]
+      build_rackup_cmd
     end
 
     def start_server
@@ -129,29 +111,40 @@ module Gemkeeper
       end
     end
 
+    def wait_for_process_exit(pid)
+      10.times do
+        return unless process_alive?(pid)
+
+        sleep 0.5
+      end
+      Process.kill("KILL", pid) if process_alive?(pid)
+    end
+
     def wait_for_server(timeout: 10)
       require "net/http"
 
-      deadline = Time.now + timeout
       uri = URI(config.geminabox_url)
+      (timeout / 0.5).ceil.times do
+        return true if server_responding?(uri)
 
-      while Time.now < deadline
-        begin
-          response = Net::HTTP.get_response(uri)
-          return true if response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPRedirection)
-        rescue Errno::ECONNREFUSED, Errno::ECONNRESET, SocketError
-          # Server not ready yet
-        end
         sleep 0.5
       end
 
       raise ServerError, "Server failed to start within #{timeout} seconds"
     end
 
-    def read_pid
-      return nil unless File.exist?(config.pid_file)
+    def server_responding?(uri)
+      response = Net::HTTP.get_response(uri)
+      response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPRedirection)
+    rescue Errno::ECONNREFUSED, Errno::ECONNRESET, SocketError
+      false
+    end
 
-      pid = File.read(config.pid_file).strip.to_i
+    def read_pid
+      pid_file = config.pid_file
+      return nil unless File.exist?(pid_file)
+
+      pid = File.read(pid_file).strip.to_i
       pid.positive? ? pid : nil
     end
 
