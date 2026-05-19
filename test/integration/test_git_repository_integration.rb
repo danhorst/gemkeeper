@@ -8,9 +8,9 @@ class TestGitRepositoryIntegration < Minitest::Test
   def setup
     @temp_dir = Dir.mktmpdir
     @remote_repo = File.join(@temp_dir, "remote.git")
+    @require_remote = File.join(@temp_dir, "require_remote.git")
     @local_repo = File.join(@temp_dir, "local")
 
-    # Create a bare "remote" repository
     create_bare_remote_repo
   end
 
@@ -78,6 +78,25 @@ class TestGitRepositoryIntegration < Minitest::Test
     version = repo.current_version
 
     assert_equal "0.1.0", version
+  end
+
+  def test_checkout_version_bare_semver_finds_v_prefixed_tag
+    repo = Gemkeeper::GitRepository.new(@remote_repo, @local_repo)
+    repo.clone_or_pull
+    create_tag_in_remote("v2.0.0")
+
+    repo.checkout_version("2.0.0")
+
+    current_ref = get_current_ref(@local_repo)
+    assert_match(/v2\.0\.0|2\.0\.0|HEAD/, current_ref)
+  end
+
+  def test_current_version_from_require_relative
+    create_remote_with_require_relative_version
+    repo = Gemkeeper::GitRepository.new(@require_remote, @local_repo)
+    repo.clone_or_pull
+
+    assert_equal "1.5.0", repo.current_version
   end
 
   def test_find_gemspec_returns_path
@@ -173,6 +192,38 @@ class TestGitRepositoryIntegration < Minitest::Test
     Dir.chdir(repo_path) do
       `git describe --tags --always 2>/dev/null || git rev-parse --short HEAD`.strip
     end
+  end
+
+  def create_remote_with_require_relative_version
+    work_dir = File.join(@temp_dir, "require_work")
+    FileUtils.mkdir_p(File.join(work_dir, "lib", "my_gem"))
+
+    Dir.chdir(work_dir) do
+      system("git", "init", "-b", "main", out: File::NULL, err: File::NULL)
+      system("git", "config", "user.email", "test@example.com", out: File::NULL, err: File::NULL)
+      system("git", "config", "user.name", "Test User", out: File::NULL, err: File::NULL)
+      system("git", "config", "commit.gpgSign", "false", out: File::NULL, err: File::NULL)
+
+      File.write("my_gem.gemspec", <<~RUBY)
+        require_relative "lib/my_gem/version"
+        Gem::Specification.new do |spec|
+          spec.name = "my-gem"
+          spec.version = MyGem::VERSION
+          spec.summary = "Test"
+        end
+      RUBY
+      File.write("lib/my_gem/version.rb", <<~RUBY)
+        module MyGem
+          VERSION = "1.5.0"
+        end
+      RUBY
+
+      system("git", "add", ".", out: File::NULL, err: File::NULL)
+      system("git", "commit", "-m", "Initial commit", out: File::NULL, err: File::NULL)
+    end
+
+    system("git", "clone", "--bare", work_dir, @require_remote, out: File::NULL, err: File::NULL)
+    FileUtils.rm_rf(work_dir)
   end
 
   def get_current_branch(repo_path)

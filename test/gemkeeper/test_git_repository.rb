@@ -68,6 +68,45 @@ class TestGitRepository < Minitest::Test
     assert_equal "2.0.0", repo.current_version
   end
 
+  def test_current_version_follows_require_relative
+    FileUtils.mkdir_p(File.join(@local_path, "lib", "my_gem"))
+    File.write(File.join(@local_path, "my_gem.gemspec"), <<~RUBY)
+      require_relative "lib/my_gem/version"
+      Gem::Specification.new do |spec|
+        spec.name = "my-gem"
+        spec.version = MyGem::VERSION
+      end
+    RUBY
+    File.write(File.join(@local_path, "lib", "my_gem", "version.rb"), <<~RUBY)
+      module MyGem
+        VERSION = "3.1.0"
+      end
+    RUBY
+
+    repo = Gemkeeper::GitRepository.new(@repo_url, @local_path)
+
+    assert_equal "3.1.0", repo.current_version
+  end
+
+  def test_current_version_falls_back_to_lib_version_file
+    FileUtils.mkdir_p(File.join(@local_path, "lib", "my_gem"))
+    File.write(File.join(@local_path, "my_gem.gemspec"), <<~RUBY)
+      Gem::Specification.new do |spec|
+        spec.name = "my-gem"
+        spec.version = MyGem::VERSION
+      end
+    RUBY
+    File.write(File.join(@local_path, "lib", "my_gem", "version.rb"), <<~RUBY)
+      module MyGem
+        VERSION = "4.2.0"
+      end
+    RUBY
+
+    repo = Gemkeeper::GitRepository.new(@repo_url, @local_path)
+
+    assert_equal "4.2.0", repo.current_version
+  end
+
   def test_checkout_version_rejects_unsafe_ref
     repo = Gemkeeper::GitRepository.new(@repo_url, @local_path)
 

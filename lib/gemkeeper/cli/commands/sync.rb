@@ -67,7 +67,8 @@ module Gemkeeper
           repo_url = gem_def.repo
           gems_path = config.gems_path
           version = resolve_version(gem_def)
-          return :skipped if cached?(name, version, gems_path)
+
+          return :skipped if !gem_def.latest? && cached?(name, version, gems_path)
 
           puts "Syncing #{name} @ #{version}..."
 
@@ -81,7 +82,13 @@ module Gemkeeper
             raise auth_error?(e) ? auth_failure_error(repo_url, e) : e
           end
 
-          checkout_gem_version(repo, gem_def, version)
+          checkout_gem_version(repo, version)
+
+          if gem_def.latest?
+            version = repo.current_version or
+              raise BuildError, "Could not read version from gemspec in #{repo_url}"
+            return :skipped if cached?(name, version, gems_path)
+          end
 
           Output.step("Building gem...")
           gem_path = GemBuilder.new(local_path, config.gems_path).build
@@ -122,7 +129,7 @@ module Gemkeeper
           end
         end
 
-        def checkout_gem_version(repo, _gem_def, version)
+        def checkout_gem_version(repo, version)
           Output.step("Checking out #{version}...")
           repo.checkout_version(version)
         end
