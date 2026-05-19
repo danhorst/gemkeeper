@@ -129,10 +129,10 @@ pid_file: ./cache/gemkeeper.pid
 gems:
   # HTTPS is recommended — works without SSH key setup (alternative: git@github.com:company/gem-one.git)
   - repo: https://github.com/company/gem-one
-    version: latest    # Use the latest commit on main/master
+    version: latest    # Use the latest commit on main/master; cached by resolved gemspec version
 
   - repo: https://github.com/company/gem-two
-    version: v1.2.3    # Use a specific tag
+    version: v1.2.3    # Use a specific tag; both v-prefixed and bare semver accepted
 
   - repo: https://github.com/company/gem-two
     version: from_lockfile    # Read version from the nearest Gemfile.lock
