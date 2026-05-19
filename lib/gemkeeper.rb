@@ -2,6 +2,7 @@
 
 require_relative "gemkeeper/version"
 require_relative "gemkeeper/errors"
+require_relative "gemkeeper/output"
 require_relative "gemkeeper/configuration"
 require_relative "gemkeeper/lockfile_parser"
 require_relative "gemkeeper/manifest_reader"

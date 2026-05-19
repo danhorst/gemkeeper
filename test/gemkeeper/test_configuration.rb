@@ -142,6 +142,22 @@ class TestConfiguration < Minitest::Test
     refute gem_def.latest?
   end
 
+  def test_invalid_port_out_of_range_raises_error
+    File.write("gemkeeper.yml", "port: 99999")
+
+    assert_raises(Gemkeeper::InvalidConfigError) do
+      Gemkeeper::Configuration.load
+    end
+  end
+
+  def test_non_integer_port_raises_error
+    File.write("gemkeeper.yml", "port: not_a_number")
+
+    assert_raises(Gemkeeper::InvalidConfigError) do
+      Gemkeeper::Configuration.load
+    end
+  end
+
   def test_invalid_version_raises_error
     File.write("gemkeeper.yml", <<~YAML)
       gems:

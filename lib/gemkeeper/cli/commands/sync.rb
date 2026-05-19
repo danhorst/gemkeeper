@@ -13,8 +13,8 @@ module Gemkeeper
           config = Configuration.load(options[:config])
           gems_to_sync = select_gems(config, gem_name)
           uploader = GemUploader.new(config.geminabox_url)
-          failures = run_sync(gems_to_sync, config, uploader)
-          report_failures(failures)
+          counts, failures = run_sync(gems_to_sync, config, uploader)
+          report_results(counts, failures, gems_to_sync.size)
         end
 
         private
@@ -37,20 +37,28 @@ module Gemkeeper
         end
 
         def run_sync(gems_to_sync, config, uploader)
+          counts = { synced: 0, skipped: 0 }
           failures = []
           gems_to_sync.each do |gem_def|
-            sync_gem(gem_def, config, uploader)
+            result = sync_gem(gem_def, config, uploader)
+            counts[result] += 1
           rescue Error => e
             failures << { name: gem_def.name, message: e.message }
           end
-          failures
+          [counts, failures]
         end
 
-        def report_failures(failures)
+        def report_results(counts, failures, total)
+          parts = []
+          parts << Output.colorize("#{counts[:synced]} synced", :green) if counts[:synced] > 0
+          parts << Output.colorize("#{counts[:skipped]} skipped", :yellow) if counts[:skipped] > 0
+          parts << Output.colorize("#{failures.size} failed", :red) if failures.any?
+          puts "\nSync complete: #{parts.join(", ")} (#{total} total)"
+
           return if failures.empty?
 
           warn "\nSync completed with #{failures.size} failure(s):"
-          failures.each { |failure| warn "  #{failure[:name]}: #{failure[:message]}" }
+          failures.each { |f| warn "  #{f[:name]}: #{f[:message]}" }
           exit 1
         end
 
@@ -59,14 +67,14 @@ module Gemkeeper
           repo_url = gem_def.repo
           gems_path = config.gems_path
           version = resolve_version(gem_def)
-          return if cached?(name, version, gems_path)
+          return :skipped if cached?(name, version, gems_path)
 
           puts "Syncing #{name} @ #{version}..."
 
           local_path = File.join(config.repos_path, name)
           repo = GitRepository.new(repo_url, local_path)
 
-          puts "  Fetching from #{repo_url}..."
+          Output.step("Fetching from #{repo_url}...")
           begin
             repo.clone_or_pull
           rescue GitError => e
@@ -75,13 +83,14 @@ module Gemkeeper
 
           checkout_gem_version(repo, gem_def, version)
 
-          puts "  Building gem..."
+          Output.step("Building gem...")
           gem_path = GemBuilder.new(local_path, config.gems_path).build
 
-          puts "  Uploading to Geminabox..."
+          Output.step("Uploading to Geminabox...")
           result = uploader.upload(gem_path)
-          puts "  #{result[:message]}"
-          puts "  Done!"
+          Output.step(result[:message])
+          Output.success("  Done!")
+          :synced
         end
 
         def resolve_version(gem_def)
@@ -105,7 +114,7 @@ module Gemkeeper
         def cached?(name, version, gems_path)
           gem_file = File.join(gems_path, "gems", "#{name}-#{version}.gem")
           if File.exist?(gem_file)
-            puts "Skipping #{name} @ #{version} (already cached)"
+            Output.skip("Skipping #{name} @ #{version} (already cached)")
             true
           else
             false
@@ -113,7 +122,7 @@ module Gemkeeper
         end
 
         def checkout_gem_version(repo, gem_def, version)
-          puts "  Checking out #{version}..."
+          Output.step("Checking out #{version}...")
           if gem_def.from_lockfile?
             repo.checkout_resolved_version(version)
           else

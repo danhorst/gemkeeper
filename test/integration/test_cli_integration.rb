@@ -118,7 +118,21 @@ class TestCLIIntegration < Minitest::Test
       result = run_gemkeeper("sync", "--config", config_path)
 
       assert_match(/already cached/, result[:stdout])
+      assert_match(/Sync complete:/, result[:stdout])
+      assert_match(/1 skipped/, result[:stdout])
     end
+  end
+
+  def test_help_exits_zero
+    result = run_gemkeeper("--help")
+
+    assert result[:status].success?
+  end
+
+  def test_server_help_exits_zero
+    result = run_gemkeeper("server", "--help")
+
+    assert result[:status].success?
   end
 
   def test_sync_from_lockfile_no_lockfile_exits_nonzero

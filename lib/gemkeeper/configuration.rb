@@ -51,6 +51,13 @@ module Gemkeeper
 
     private
 
+    def validate_port!
+      return if @port.is_a?(Integer) && (1..65_535).cover?(@port)
+
+      raise InvalidConfigError,
+            "port must be an integer between 1 and 65535, got #{@port.inspect}"
+    end
+
     def find_config_file
       self.class.config_search_paths.find { |path| File.exist?(path) }
     end
@@ -67,6 +74,7 @@ module Gemkeeper
 
     def apply_config
       @port = @config.fetch(:port, DEFAULT_PORT)
+      validate_port!
       @repos_path = File.expand_path(@config.fetch(:repos_path, "./cache/repos"))
       @gems_path = File.expand_path(@config.fetch(:gems_path, "./cache/gems"))
       @pid_file = File.expand_path(@config.fetch(:pid_file, "./cache/gemkeeper.pid"))

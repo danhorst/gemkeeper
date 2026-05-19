@@ -6,4 +6,8 @@ $LOAD_PATH.unshift File.expand_path("../lib", __dir__)
 require "gemkeeper"
 require "gemkeeper/cli"
 
-Dry::CLI.new(Gemkeeper::CLI).call
+begin
+  Dry::CLI.new(Gemkeeper::CLI).call
+rescue SystemExit => e
+  exit ARGV.include?("--help") || ARGV.include?("-h") ? 0 : e.status
+end
