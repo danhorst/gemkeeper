@@ -54,6 +54,7 @@ jobs:
           RELEASE_NOTES: ${{ steps.changelog.outputs.notes }}
         run: |
           printf '%s' "$RELEASE_NOTES" > /tmp/release-notes.md
+          gh release view "${{ steps.version.outputs.tag }}" >/dev/null 2>&1 && exit 0
           gh release create "${{ steps.version.outputs.tag }}" \
             --title "${{ steps.version.outputs.tag }}" \
             --notes-file /tmp/release-notes.md
