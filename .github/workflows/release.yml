@@ -60,7 +60,18 @@ jobs:
             --title "${{ steps.version.outputs.tag }}" \
             --notes-file /tmp/release-notes.md
 
+      - name: Check gem published
+        id: check_gem
+        run: |
+          BARE="${{ steps.version.outputs.bare }}"
+          if curl -sf "https://rubygems.org/gems/gemkeeper-${BARE}.gem" -o /dev/null; then
+            echo "already_published=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "already_published=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Build and push gem
+        if: steps.check_gem.outputs.already_published != 'true'
         uses: rubygems/release-gem@v1
 
       - name: Compute gem SHA256
