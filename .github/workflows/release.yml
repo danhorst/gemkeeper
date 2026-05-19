@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   release:
@@ -60,8 +61,4 @@ jobs:
             --notes-file /tmp/release-notes.md
 
       - name: Build and push gem
-        env:
-          GEM_HOST_API_KEY: ${{ secrets.RUBYGEMS_API_KEY }}
-        run: |
-          gem build gemkeeper.gemspec
-          gem push "gemkeeper-${{ steps.version.outputs.bare }}.gem"
+        uses: rubygems/release-gem@v1
