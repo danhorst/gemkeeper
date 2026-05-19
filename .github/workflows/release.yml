@@ -62,3 +62,49 @@ jobs:
 
       - name: Build and push gem
         uses: rubygems/release-gem@v1
+
+      - name: Compute gem SHA256
+        id: sha
+        run: |
+          BARE="${{ steps.version.outputs.bare }}"
+          URL="https://rubygems.org/downloads/gemkeeper-${BARE}.gem"
+          SHA=$(curl -sL "$URL" | sha256sum | cut -d' ' -f1)
+          echo "gem=$SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Update tap formula
+        env:
+          GH_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          BARE: ${{ steps.version.outputs.bare }}
+          GEM_SHA: ${{ steps.sha.outputs.gem }}
+        run: |
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/danhorst/homebrew-tap.git" tap
+
+          python3 - <<'PYEOF'
+          import re, os
+
+          formula_path = "tap/Formula/gemkeeper.rb"
+          bare    = os.environ["BARE"]
+          gem_sha = os.environ["GEM_SHA"]
+
+          text = open(formula_path).read()
+
+          text = re.sub(
+            r'url "https://rubygems\.org/downloads/gemkeeper-[^"]+"',
+            f'url "https://rubygems.org/downloads/gemkeeper-{bare}.gem"',
+            text,
+          )
+          text = re.sub(
+            r'sha256 "[a-f0-9]+"',
+            f'sha256 "{gem_sha}"',
+            text,
+          )
+
+          open(formula_path, "w").write(text)
+          print("Formula updated.")
+          PYEOF
+
+          git -C tap config user.name "github-actions[bot]"
+          git -C tap config user.email "github-actions[bot]@users.noreply.github.com"
+          git -C tap add Formula/gemkeeper.rb
+          git -C tap commit -m "Update gemkeeper to v${BARE}"
+          git -C tap push
