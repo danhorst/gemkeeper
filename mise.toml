@@ -1,3 +1,6 @@
 [env]
-_.path = ["bin"]
-
+_.file = ".env"
+_.path = [
+  "bin",
+  "exe",
+]
