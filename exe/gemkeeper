@@ -9,5 +9,5 @@ require "gemkeeper/cli"
 begin
   Dry::CLI.new(Gemkeeper::CLI).call
 rescue SystemExit => e
-  exit ARGV.include?("--help") || ARGV.include?("-h") ? 0 : e.status
+  exit(ARGV.include?("--help") || ARGV.include?("-h") ? 0 : e.status)
 end

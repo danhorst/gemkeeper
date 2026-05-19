@@ -50,8 +50,8 @@ module Gemkeeper
 
         def report_results(counts, failures, total)
           parts = []
-          parts << Output.colorize("#{counts[:synced]} synced", :green) if counts[:synced] > 0
-          parts << Output.colorize("#{counts[:skipped]} skipped", :yellow) if counts[:skipped] > 0
+          parts << Output.colorize("#{counts[:synced]} synced", :green) if counts[:synced].positive?
+          parts << Output.colorize("#{counts[:skipped]} skipped", :yellow) if counts[:skipped].positive?
           parts << Output.colorize("#{failures.size} failed", :red) if failures.any?
           puts "\nSync complete: #{parts.join(", ")} (#{total} total)"
 
@@ -76,11 +76,7 @@ module Gemkeeper
           repo = GitRepository.new(repo_url, local_path)
 
           Output.step("Fetching from #{repo_url}...")
-          begin
-            repo.clone_or_pull
-          rescue GitError => e
-            raise auth_error?(e) ? auth_failure_error(repo_url, e) : e
-          end
+          fetch_repo(repo, repo_url)
 
           checkout_gem_version(repo, version)
 
@@ -119,7 +115,7 @@ module Gemkeeper
         end
 
         def cached?(name, version, gems_path)
-          bare_version = version.sub(/\Av/, "")
+          bare_version = version.delete_prefix("v")
           gem_file = File.join(gems_path, "gems", "#{name}-#{bare_version}.gem")
           if File.exist?(gem_file)
             Output.skip("Skipping #{name} @ #{bare_version} (already cached)")
@@ -127,6 +123,12 @@ module Gemkeeper
           else
             false
           end
+        end
+
+        def fetch_repo(repo, repo_url)
+          repo.clone_or_pull
+        rescue GitError => e
+          raise auth_error?(e) ? auth_failure_error(repo_url, e) : e
         end
 
         def checkout_gem_version(repo, version)

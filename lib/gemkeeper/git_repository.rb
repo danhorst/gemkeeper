@@ -106,7 +106,7 @@ module Gemkeeper
     end
 
     def checkout_tag(version)
-      bare = version.sub(/\Av/, "")
+      bare = version.delete_prefix("v")
       validate_ref!(bare)
       Dir.chdir(@local_path) do
         run_git("fetch", "--all", "--tags")

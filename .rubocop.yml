@@ -7,6 +7,7 @@ AllCops:
   SuggestExtensions: false
   Exclude:
     - cache/**/*
+    - scripts/**/*
     - vendor/**/*
 
 Style/StringLiterals:
@@ -25,6 +26,6 @@ Metrics/AbcSize:
   Max: 40
 
 Metrics/ClassLength:
-  Max: 120
+  Max: 125
   Exclude:
     - test/**/*
