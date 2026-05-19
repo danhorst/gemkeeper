@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-19
+
 ### Fixed
 
 - `version: latest` now caches by the resolved gemspec version rather than the string "latest" — re-running `sync` is a no-op if the tip hasn't changed.
@@ -17,3 +19,6 @@
 ## [0.1.0] - 2026-01-29
 
 - Initial release
+
+[Unreleased]: https://github.com/danhorst/gemkeeper/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/danhorst/gemkeeper/compare/0.1.0...0.2.0
