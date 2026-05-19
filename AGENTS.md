@@ -61,6 +61,14 @@ gems:
 - `gemkeeper sync <gem-name>` - Sync specific gem
 - `gemkeeper list` - Show locally uploaded gems
 
+## Release
+
+Version is defined in `lib/gemkeeper/version.rb` as `Gemkeeper::VERSION`.
+
+To cut a release, run `./scripts/release vX.Y.Z` from the repo root.
+The script validates the version format, checks the working tree is clean, ensures `[Unreleased]` in CHANGELOG.md has content, bumps the version constant, promotes the changelog section, commits, tags, and pushes.
+GitHub Actions (`.github/workflows/release.yml`) then builds the gem and pushes it to RubyGems using the `RUBYGEMS_API_KEY` repository secret.
+
 ## Development
 
 ```bash

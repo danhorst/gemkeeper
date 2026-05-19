@@ -37,6 +37,7 @@ Gem::Specification.new do |spec|
                       bin/
                       gemkeeper
                       img/
+                      scripts/
                       test/
                     ])
     end

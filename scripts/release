@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+CHANGELOG="$REPO_ROOT/CHANGELOG.md"
+VERSION_FILE="$REPO_ROOT/lib/gemkeeper/version.rb"
+REPO_URL="https://github.com/danhorst/gemkeeper"
+
+usage() {
+  echo "Usage: $(basename "$0") vX.Y.Z"
+  exit 1
+}
+
+[ "${1:-}" = "" ] && usage
+VERSION="$1"
+[[ "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "Error: version must be vX.Y.Z"; exit 1; }
+
+cd "$REPO_ROOT"
+
+# Ensure working tree is clean (CHANGELOG and version file aside)
+DIRTY=$(git status --porcelain | grep -vE '^.. (CHANGELOG|lib/gemkeeper/version\.rb)' || true)
+[ -n "$DIRTY" ] && { echo "Error: uncommitted changes present"; git status --short; exit 1; }
+
+# Ensure [Unreleased] has content to promote
+grep -q '^\#\# \[Unreleased\]' "$CHANGELOG" || { echo "Error: no [Unreleased] section found in CHANGELOG.md"; exit 1; }
+UNRELEASED_CONTENT=$(awk '/^## \[Unreleased\]/{found=1; next} found && /^## \[/{exit} found{print}' "$CHANGELOG")
+[ -z "$(echo "$UNRELEASED_CONTENT" | tr -d '[:space:]')" ] && { echo "Error: [Unreleased] section is empty — add changelog entries first"; exit 1; }
+
+TODAY="$(date +%Y-%m-%d)"
+BARE="${VERSION#v}"
+
+echo "Releasing $VERSION ($TODAY)..."
+
+# 1. Bump version in version.rb
+sd 'VERSION = "[0-9]+\.[0-9]+\.[0-9]+"' "VERSION = \"$BARE\"" "$VERSION_FILE"
+
+# 2. Promote [Unreleased] → [VERSION] in CHANGELOG
+sd '## \[Unreleased\]' "## [Unreleased]\n\n## [$BARE] - $TODAY" "$CHANGELOG"
+
+# 3. Update or bootstrap comparison links
+PREV_TAG=$(git tag --sort=-version:refname | grep '^v' | head -1 || true)
+PREV_BARE="${PREV_TAG#v}"
+if grep -q '^\[Unreleased\]: ' "$CHANGELOG"; then
+  sd "\[Unreleased\]: ${REPO_URL}/compare/.*\.\.\.HEAD" \
+     "[Unreleased]: ${REPO_URL}/compare/${VERSION}...HEAD\n[$BARE]: ${REPO_URL}/compare/${PREV_BARE}...${BARE}" \
+     "$CHANGELOG"
+else
+  {
+    echo ""
+    echo "[Unreleased]: ${REPO_URL}/compare/${VERSION}...HEAD"
+    if [ -n "$PREV_BARE" ]; then
+      echo "[$BARE]: ${REPO_URL}/compare/${PREV_BARE}...${BARE}"
+    else
+      echo "[$BARE]: ${REPO_URL}/releases/tag/${VERSION}"
+    fi
+  } >> "$CHANGELOG"
+fi
+
+# 4. Commit and tag
+git add lib/gemkeeper/version.rb CHANGELOG.md
+git commit -m "Release $VERSION"
+git tag -a "$VERSION" -m "$VERSION"
+
+# 5. Push — CI handles gem build and RubyGems push
+git push origin main
+git push origin "$VERSION"
+
+echo "Tag pushed. GitHub Actions will build and push the gem to RubyGems."
