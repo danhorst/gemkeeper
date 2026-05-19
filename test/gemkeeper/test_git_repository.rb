@@ -84,11 +84,17 @@ class TestGitRepository < Minitest::Test
     end
   end
 
-  def test_checkout_version_accepts_valid_refs
+  def test_checkout_version_accepts_v_prefixed_ref
     repo = Gemkeeper::GitRepository.new(@repo_url, @local_path)
 
-    # Validation passes — error raised is a filesystem or git error, not the ref-rejection error
     err = assert_raises(StandardError) { repo.checkout_version("v1.2.3") }
+    refute_match(/Unsafe ref rejected/, err.message)
+  end
+
+  def test_checkout_version_accepts_bare_semver_ref
+    repo = Gemkeeper::GitRepository.new(@repo_url, @local_path)
+
+    err = assert_raises(StandardError) { repo.checkout_version("1.2.3") }
     refute_match(/Unsafe ref rejected/, err.message)
   end
 end

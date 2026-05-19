@@ -26,23 +26,8 @@ module Gemkeeper
       if version == "latest"
         checkout_trunk
       else
-        validate_ref!(version)
-        checkout_ref(version)
+        checkout_tag(version)
       end
-    end
-
-    def checkout_resolved_version(version)
-      validate_ref!(version)
-      Dir.chdir(@local_path) do
-        run_git("fetch", "--all", "--tags")
-        begin
-          run_git("checkout", "v#{version}")
-        rescue GitError
-          run_git("checkout", version)
-        end
-      end
-    rescue GitError
-      raise GitError, "Could not find tag v#{version} or #{version} in #{@repo_url}"
     end
 
     def current_version
@@ -95,11 +80,19 @@ module Gemkeeper
       raise GitError, "Unsafe ref rejected: #{ref.inspect} — must match [a-zA-Z0-9._-]"
     end
 
-    def checkout_ref(ref)
+    def checkout_tag(version)
+      bare = version.sub(/\Av/, "")
+      validate_ref!(bare)
       Dir.chdir(@local_path) do
         run_git("fetch", "--all", "--tags")
-        run_git("checkout", ref)
+        begin
+          run_git("checkout", "v#{bare}")
+        rescue GitError
+          run_git("checkout", bare)
+        end
       end
+    rescue GitError
+      raise GitError, "Could not find tag v#{bare} or #{bare} in #{@repo_url}"
     end
 
     def detect_trunk_branch

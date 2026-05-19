@@ -112,22 +112,19 @@ module Gemkeeper
         end
 
         def cached?(name, version, gems_path)
-          gem_file = File.join(gems_path, "gems", "#{name}-#{version}.gem")
+          bare_version = version.sub(/\Av/, "")
+          gem_file = File.join(gems_path, "gems", "#{name}-#{bare_version}.gem")
           if File.exist?(gem_file)
-            Output.skip("Skipping #{name} @ #{version} (already cached)")
+            Output.skip("Skipping #{name} @ #{bare_version} (already cached)")
             true
           else
             false
           end
         end
 
-        def checkout_gem_version(repo, gem_def, version)
+        def checkout_gem_version(repo, _gem_def, version)
           Output.step("Checking out #{version}...")
-          if gem_def.from_lockfile?
-            repo.checkout_resolved_version(version)
-          else
-            repo.checkout_version(version)
-          end
+          repo.checkout_version(version)
         end
 
         def auth_error?(error)
