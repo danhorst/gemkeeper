@@ -13,15 +13,15 @@ gem install gemkeeper
 ### Via Homebrew (MacOS)
 
 ```bash
-brew tap danhorst/gemkeeper
-brew install gemkeeper
+brew tap danhorst/tap
+brew install danhorst/tap/gemkeeper
 ```
 
-Forumla: [`danhorst/homebrew-gemkeeper`][2]
+Forumla: [`danhorst/homebrew-tap`][2]
 
-## Contractor Setup
+## Workstation Setup
 
-If you are a contractor who cannot reach your organization's private gem server, follow these steps to use gemkeeper as a local proxy.
+If you cannot reach your organization's private gem server, follow these steps to use gemkeeper as a local proxy.
 
 **Prerequisites:** You must have HTTPS access to the internal gem repositories on GitHub.
 Configure GitHub credentials before step 4 — see [GitHub authentication docs][3].
@@ -252,5 +252,5 @@ bundle exec rubocop      # Run linter
 ```
 
 [1]: https://github.com/geminabox/geminabox
-[2]: https://github.com/danhorst/homebrew-gemkeeper
+[2]: https://github.com/danhorst/homebrew-tap
 [3]: https://docs.github.com/en/authentication
