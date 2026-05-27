@@ -1,5 +1,22 @@
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-27
+
+### Added
+
+- `gemkeeper setup` no longer requires a pre-existing manifest.
+  When given a Gemfile.lock, it discovers internal gems by source type and builds or updates `~/.config/gemkeeper/manifest.yml` automatically.
+  GIT-sourced gems (declared with `git:` in the Gemfile) are added directly — the repo URL comes from the lockfile.
+  Gems from private registries (e.g. GitHub Packages) have their repo URL inferred where possible or prompted for interactively; running non-interactively without a resolvable URL exits with a clear error.
+- `gemkeeper setup` accepts either a Gemfile.lock or an existing `gemkeeper.yml` as its argument.
+  Passing a `gemkeeper.yml` updates the manifest with its repo mappings and, with `--global`, installs it to the global config path.
+- The `--manifest` option controls the path used for both reading and writing the manifest, defaulting to `~/.config/gemkeeper/manifest.yml`.
+
+### Fixed
+
+- GIT-sourced gems (pinned in the `GIT` section of the lockfile) are now included in the generated `gemkeeper.yml`.
+  Previously they were silently omitted because the lockfile parser only read `GEM` sections.
+
 ## [0.3.0] - 2026-05-27
 
 ### Added
@@ -35,7 +52,8 @@
 
 - Initial release
 
-[Unreleased]: https://github.com/danhorst/gemkeeper/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/danhorst/gemkeeper/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/danhorst/gemkeeper/compare/0.3.0...0.4.0
 [0.3.0]: https://github.com/danhorst/gemkeeper/compare/0.2.1...0.3.0
 [0.2.1]: https://github.com/danhorst/gemkeeper/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/danhorst/gemkeeper/compare/0.1.0...0.2.0
