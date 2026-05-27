@@ -11,6 +11,9 @@
 - `gemkeeper setup` accepts either a Gemfile.lock or an existing `gemkeeper.yml` as its argument.
   Passing a `gemkeeper.yml` updates the manifest with its repo mappings and, with `--global`, installs it to the global config path.
 - The `--manifest` option controls the path used for both reading and writing the manifest, defaulting to `~/.config/gemkeeper/manifest.yml`.
+- `gemkeeper setup` now automatically configures Bundler mirror settings for each private gem registry found in the lockfile, pointing them at the local Geminabox.
+  Uses `--local` scope by default; `--global` setup uses `--global` scope.
+  Pass `--skip-bundler-config` to opt out.
 
 ### Fixed
 
