@@ -23,7 +23,7 @@ class TestSetupIntegration < Minitest::Test
       assert File.exist?(output), "gemkeeper.yml was not created"
 
       config = YAML.safe_load_file(output)
-      gem_names = config["gems"].map { |g| File.basename(g["repo"]) }
+      gem_names = config["gems"].map { |gem_entry| File.basename(gem_entry["repo"]) }
 
       assert_includes gem_names, "internal-gem-one"
       assert_includes gem_names, "internal-gem-two"
@@ -50,7 +50,7 @@ class TestSetupIntegration < Minitest::Test
       run_gemkeeper("setup", FIXTURE_LOCKFILE, "--manifest", FIXTURE_MANIFEST, "--config", output)
 
       config = YAML.safe_load_file(output)
-      gem_names = config["gems"].map { |g| File.basename(g["repo"]) }
+      gem_names = config["gems"].map { |gem_entry| File.basename(gem_entry["repo"]) }
 
       # other-internal-gem is in manifest but not in the lockfile
       refute_includes gem_names, "other-internal-gem"
@@ -135,7 +135,7 @@ class TestSetupIntegration < Minitest::Test
       assert File.exist?(global_path), "Global config was not created"
 
       config = YAML.safe_load_file(global_path)
-      gem_names = config["gems"].map { |g| File.basename(g["repo"]) }
+      gem_names = config["gems"].map { |gem_entry| File.basename(gem_entry["repo"]) }
       assert_includes gem_names, "internal-gem-one"
       assert_includes gem_names, "internal-gem-two"
     end

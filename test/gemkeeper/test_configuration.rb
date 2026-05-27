@@ -53,17 +53,17 @@ class TestConfiguration < Minitest::Test
 
     assert_equal 2, config.gems.size
 
-    gem1 = config.gems[0]
-    assert_equal "git@github.com:company/my-gem.git", gem1.repo
-    assert_equal "v1.2.3", gem1.version
-    assert_equal "my-gem", gem1.name
-    refute gem1.latest?
+    first_gem = config.gems[0]
+    assert_equal "git@github.com:company/my-gem.git", first_gem.repo
+    assert_equal "v1.2.3", first_gem.version
+    assert_equal "my-gem", first_gem.name
+    refute first_gem.latest?
 
-    gem2 = config.gems[1]
-    assert_equal "git@github.com:company/other-gem.git", gem2.repo
-    assert_equal "latest", gem2.version
-    assert_equal "other-gem", gem2.name
-    assert gem2.latest?
+    second_gem = config.gems[1]
+    assert_equal "git@github.com:company/other-gem.git", second_gem.repo
+    assert_equal "latest", second_gem.version
+    assert_equal "other-gem", second_gem.name
+    assert second_gem.latest?
   end
 
   def test_explicit_config_path
@@ -124,8 +124,8 @@ class TestConfiguration < Minitest::Test
 
     assert_kind_of Array, paths
     assert paths.length >= 3
-    assert(paths.any? { |p| p.end_with?("gemkeeper.yml") })
-    assert(paths.any? { |p| p.include?(".config/gemkeeper") })
+    assert(paths.any? { |path| path.end_with?("gemkeeper.yml") })
+    assert(paths.any? { |path| path.include?(".config/gemkeeper") })
   end
 
   def test_resolve_global_path_uses_env_var_override
@@ -162,11 +162,11 @@ class TestConfiguration < Minitest::Test
   private
 
   def with_env(vars)
-    old = vars.keys.to_h { |k| [k, ENV.fetch(k, nil)] }
-    vars.each { |k, v| ENV[k] = v }
+    old = vars.keys.to_h { |key| [key, ENV.fetch(key, nil)] }
+    vars.each { |key, val| ENV[key] = val }
     yield
   ensure
-    old.each { |k, v| v.nil? ? ENV.delete(k) : ENV.store(k, v) }
+    old.each { |key, val| val.nil? ? ENV.delete(key) : ENV.store(key, val) }
   end
 
   def test_from_lockfile_version_recognized

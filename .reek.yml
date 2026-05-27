@@ -1,4 +1,9 @@
 ---
+# Reek skips test files — Minitest patterns (setup instance vars, accumulating test methods,
+# calling the same method before/after) are idiomatic there, not smells.
+exclude_paths:
+  - test
+
 detectors:
   IrresponsibleModule:
     exclude:
