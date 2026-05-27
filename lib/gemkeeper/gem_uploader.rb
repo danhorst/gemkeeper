@@ -4,6 +4,7 @@ require "faraday"
 require "faraday/multipart"
 
 module Gemkeeper
+  # Encapsulates Geminabox's HTTP API so callers never construct multipart requests directly.
   class GemUploader
     attr_reader :geminabox_url
 
@@ -30,9 +31,10 @@ module Gemkeeper
     def list_gems
       response = connection.get("/api/v1/gems.json")
 
-      raise UploadError, "Failed to list gems: #{response.status} #{response.body}" unless response.success?
+      body = response.body
+      raise UploadError, "Failed to list gems: #{response.status} #{body}" unless response.success?
 
-      JSON.parse(response.body)
+      JSON.parse(body)
     rescue JSON::ParserError => parse_error
       raise UploadError, "Invalid JSON response: #{parse_error.message}"
     rescue Faraday::Error => connection_error
@@ -50,13 +52,15 @@ module Gemkeeper
     end
 
     def handle_response(response, gem_path)
-      case response.status
+      status   = response.status
+      gem_name = File.basename(gem_path)
+      case status
       when 200, 201, 302
-        { success: true, message: "Uploaded #{File.basename(gem_path)}" }
+        { success: true, message: "Uploaded #{gem_name}" }
       when 409
-        { success: true, message: "#{File.basename(gem_path)} already exists", skipped: true }
+        { success: true, message: "#{gem_name} already exists", skipped: true }
       else
-        raise UploadError, "Upload failed (#{response.status}): #{response.body}"
+        raise UploadError, "Upload failed (#{status}): #{response.body}"
       end
     rescue Faraday::Error => connection_error
       raise UploadError, "Connection error: #{connection_error.message}"

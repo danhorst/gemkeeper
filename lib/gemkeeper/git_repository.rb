@@ -4,6 +4,7 @@ require "open3"
 require "fileutils"
 
 module Gemkeeper
+  # Centralizes safe ref validation; prevents command injection via untrusted version strings.
   class GitRepository
     attr_reader :repo_url, :local_path
 

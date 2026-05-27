@@ -13,18 +13,20 @@ module Gemkeeper
                               desc: "Run in foreground (don't daemonize)"
 
           def call(**options)
+            port = options[:port]
             config = Configuration.load(options[:config])
-            config = override_port(config, options[:port]) if options[:port]
+            config = override_port(config, port) if port
 
             manager = ServerManager.new(config)
+            url = config.geminabox_url
 
             if options[:foreground]
-              puts "Starting Geminabox server at #{config.geminabox_url}"
+              puts "Starting Geminabox server at #{url}"
               puts "Press Ctrl+C to stop"
               manager.start_foreground
             else
               manager.start
-              puts "Geminabox server started at #{config.geminabox_url}"
+              puts "Geminabox server started at #{url}"
               puts "PID: #{File.read(config.pid_file).strip}"
             end
           rescue ServerAlreadyRunningError => error

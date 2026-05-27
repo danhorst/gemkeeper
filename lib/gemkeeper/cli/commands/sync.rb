@@ -49,15 +49,18 @@ module Gemkeeper
         end
 
         def report_results(counts, failures, total)
+          synced  = counts[:synced]
+          skipped = counts[:skipped]
+          failure_count = failures.size
           parts = []
-          parts << Output.colorize("#{counts[:synced]} synced", :green) if counts[:synced].positive?
-          parts << Output.colorize("#{counts[:skipped]} skipped", :yellow) if counts[:skipped].positive?
-          parts << Output.colorize("#{failures.size} failed", :red) if failures.any?
+          parts << Output.colorize("#{synced} synced", :green) if synced.positive?
+          parts << Output.colorize("#{skipped} skipped", :yellow) if skipped.positive?
+          parts << Output.colorize("#{failure_count} failed", :red) if failures.any?
           puts "\nSync complete: #{parts.join(", ")} (#{total} total)"
 
           return if failures.empty?
 
-          warn "\nSync completed with #{failures.size} failure(s):"
+          warn "\nSync completed with #{failure_count} failure(s):"
           failures.each { |f| warn "  #{f[:name]}: #{f[:message]}" }
           exit 1
         end
@@ -68,7 +71,8 @@ module Gemkeeper
           gems_path = config.gems_path
           version = resolve_version(gem_def)
 
-          return :skipped if !gem_def.latest? && cached?(name, version, gems_path)
+          latest = gem_def.latest?
+          return :skipped if !latest && cached?(name, version, gems_path)
 
           puts "Syncing #{name} @ #{version}..."
 
@@ -80,14 +84,14 @@ module Gemkeeper
 
           checkout_gem_version(repo, version)
 
-          if gem_def.latest?
+          if latest
             version = repo.current_version or
               raise BuildError, "Could not read version from gemspec in #{repo_url}"
             return :skipped if cached?(name, version, gems_path)
           end
 
           Output.step("Building gem...")
-          gem_path = GemBuilder.new(local_path, config.gems_path).build
+          gem_path = GemBuilder.new(local_path, gems_path).build
 
           Output.step("Uploading to Geminabox...")
           result = uploader.upload(gem_path)

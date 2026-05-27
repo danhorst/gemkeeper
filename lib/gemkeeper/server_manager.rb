@@ -4,6 +4,7 @@ require "open3"
 require "fileutils"
 
 module Gemkeeper
+  # Owns the rackup/puma lifecycle so CLI commands delegate process management here.
   class ServerManager
     attr_reader :config
 

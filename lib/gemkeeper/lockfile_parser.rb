@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module Gemkeeper
+  # Locates the nearest Gemfile.lock by walking up; callers don't need to know the search algorithm.
   class LockfileParser
     LOCKFILE_NAME = "Gemfile.lock"
 
@@ -38,13 +39,14 @@ module Gemkeeper
       in_gem_specs = false
 
       content.each_line do |line|
-        if line.strip == "GEM"
+        stripped = line.strip
+        if stripped == "GEM"
           in_gem_specs = true
           next
         end
 
         # A new top-level section (no leading spaces) ends the GEM block
-        in_gem_specs = false if in_gem_specs && line =~ /\A[A-Z]/ && line.strip != "GEM"
+        in_gem_specs = false if in_gem_specs && line =~ /\A[A-Z]/ && stripped != "GEM"
 
         next unless in_gem_specs
 

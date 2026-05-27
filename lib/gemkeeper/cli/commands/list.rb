@@ -11,11 +11,12 @@ module Gemkeeper
         def call(**options)
           config = Configuration.load(options[:config])
 
-          gem_files = Dir.glob(File.join(config.gems_path, "gems", "*.gem"))
+          gems_path = config.gems_path
+          gem_files = Dir.glob(File.join(gems_path, "gems", "*.gem"))
 
           if gem_files.empty?
             puts "No gems cached in Geminabox"
-            puts "  Gems directory: #{config.gems_path}"
+            puts "  Gems directory: #{gems_path}"
             return
           end
 

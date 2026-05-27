@@ -1,0 +1,32 @@
+---
+detectors:
+  IrresponsibleModule:
+    exclude:
+    # Pure namespace modules — no behaviour to document
+    - Gemkeeper
+    - Gemkeeper::CLI
+    - Gemkeeper::CLI::Commands
+    - Gemkeeper::CLI::Commands::Server
+    # One-liner exception subclasses — their names are the documentation
+    - Gemkeeper::Error
+    - Gemkeeper::ConfigurationError
+    - Gemkeeper::ConfigFileNotFoundError
+    - Gemkeeper::InvalidConfigError
+    - Gemkeeper::ManifestNotFoundError
+    - Gemkeeper::GitError
+    - Gemkeeper::CloneError
+    - Gemkeeper::CheckoutError
+    - Gemkeeper::BuildError
+    - Gemkeeper::GemspecNotFoundError
+    - Gemkeeper::UploadError
+    - Gemkeeper::ServerError
+    - Gemkeeper::ServerAlreadyRunningError
+    - Gemkeeper::ServerNotRunningError
+    # CLI command classes carry a dry-cli `desc` as their documentation
+    - Gemkeeper::CLI::Commands::List
+    - Gemkeeper::CLI::Commands::Setup
+    - Gemkeeper::CLI::Commands::Sync
+    - Gemkeeper::CLI::Commands::Version
+    - Gemkeeper::CLI::Commands::Server::Start
+    - Gemkeeper::CLI::Commands::Server::Stop
+    - Gemkeeper::CLI::Commands::Server::Status

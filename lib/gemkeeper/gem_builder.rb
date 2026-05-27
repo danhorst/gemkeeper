@@ -4,6 +4,7 @@ require "open3"
 require "fileutils"
 
 module Gemkeeper
+  # Shells out to `gem build` in an isolated working directory; decoupled so tests can stub it.
   class GemBuilder
     attr_reader :repo_path, :output_dir
 

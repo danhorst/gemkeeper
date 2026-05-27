@@ -3,6 +3,7 @@
 require "yaml"
 
 module Gemkeeper
+  # Decouples manifest format from sync/setup commands that need the eligible gem list.
   class ManifestReader
     DEFAULT_PATH = File.expand_path("~/.config/gemkeeper/manifest.yml")
 

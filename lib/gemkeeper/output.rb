@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module Gemkeeper
+  # Centralizes ANSI gating so color codes never appear in test output or pipes.
   module Output
     COLORS = {
       green: "\e[32m",

@@ -3,6 +3,7 @@
 require "yaml"
 
 module Gemkeeper
+  # Isolates merge/build logic from CLI commands so setup-adjacent features share a single path.
   class ConfigGenerator
     def initialize(manifest:, lockfile_versions:)
       @manifest = manifest

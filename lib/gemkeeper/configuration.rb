@@ -4,6 +4,7 @@ require "yaml"
 require "fileutils"
 
 module Gemkeeper
+  # Single source of truth for resolved paths and settings; callers never touch raw YAML keys.
   class Configuration
     DEFAULT_PORT = 9292
     DEFAULT_CONFIG_FILENAME = "gemkeeper.yml"
@@ -111,6 +112,7 @@ module Gemkeeper
       FileUtils.mkdir_p(@gems_path)
     end
 
+    # Keeps per-gem config strongly typed so callers get validated attributes instead of raw hash access.
     class GemDefinition
       VALID_VERSION_PATTERN = /\A[a-zA-Z0-9._-]+\z/
       RESERVED_VERSIONS = %w[latest from_lockfile].freeze
