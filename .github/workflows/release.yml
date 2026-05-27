@@ -64,7 +64,7 @@ jobs:
         id: check_gem
         run: |
           BARE="${{ steps.version.outputs.bare }}"
-          if curl -sf "https://rubygems.org/gems/gemkeeper-${BARE}.gem" -o /dev/null; then
+          if curl -fsL "https://rubygems.org/downloads/gemkeeper-${BARE}.gem" -o /dev/null; then
             echo "already_published=true" >> "$GITHUB_OUTPUT"
           else
             echo "already_published=false" >> "$GITHUB_OUTPUT"
@@ -84,8 +84,9 @@ jobs:
         id: sha
         run: |
           BARE="${{ steps.version.outputs.bare }}"
-          URL="https://rubygems.org/downloads/gemkeeper-${BARE}.gem"
-          SHA=$(curl -sL "$URL" | sha256sum | cut -d' ' -f1)
+          GEM_FILE="/tmp/gemkeeper-${BARE}.gem"
+          curl -fsSL "https://rubygems.org/downloads/gemkeeper-${BARE}.gem" -o "$GEM_FILE"
+          SHA=$(sha256sum "$GEM_FILE" | cut -d' ' -f1)
           echo "gem=$SHA" >> "$GITHUB_OUTPUT"
 
       - name: Update tap formula
