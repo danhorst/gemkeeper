@@ -15,6 +15,8 @@ module Gemkeeper
                         desc: "Write to the global service config (for use with brew services)"
         option :force, type: :boolean, default: false,
                        desc: "Overwrite existing gemkeeper.yml entirely"
+        option :skip_bundler_config, type: :boolean, default: false,
+                                     desc: "Skip configuring Bundler mirrors for private gem sources"
 
         def call(source_path:, **options)
           validate_options!(options)
@@ -52,7 +54,26 @@ module Gemkeeper
 
           File.write(output_path, config.to_yaml)
           puts "Wrote #{output_path}"
-          print_bundler_instructions(config, manifest)
+          configure_bundler(candidates, config, options) unless options[:skip_bundler_config]
+        end
+
+        def configure_bundler(candidates, config, options)
+          remotes = candidates.filter_map { |c| c[:remote] if c[:source_type] == :private_gem }.uniq
+          return if remotes.empty?
+
+          port = config.fetch("port", Configuration::DEFAULT_PORT)
+          local_url = "http://localhost:#{port}"
+          scope = options[:global] ? "--global" : "--local"
+
+          puts ""
+          remotes.each do |remote|
+            if system("bundle", "config", "set", scope, "mirror.#{remote}", local_url, out: File::NULL)
+              puts "Configured: bundle config set #{scope} mirror.#{remote} #{local_url}"
+            else
+              warn "Warning: failed to configure bundler mirror for #{remote}"
+              warn "  Run manually: bundle config set #{scope} mirror.#{remote} #{local_url}"
+            end
+          end
         end
 
         def setup_from_config(source_path, output_path, options)
@@ -113,20 +134,6 @@ module Gemkeeper
         def no_global_path!
           warn "Error: no writable global config path found — install Homebrew or create ~/.config/gemkeeper/"
           exit 1
-        end
-
-        def print_bundler_instructions(config, manifest)
-          port = config.fetch("port", Configuration::DEFAULT_PORT)
-          local_url = "http://localhost:#{port}"
-          source_url = manifest.source_url
-          puts ""
-          puts "To point Bundler at your local Geminabox, run:"
-          if source_url
-            puts "  bundle config set --local mirror.#{source_url} #{local_url}"
-          else
-            puts "  bundle config set --local mirror.<your-private-gem-source-url> #{local_url}"
-            puts "  (Replace <your-private-gem-source-url> with the gem source URL from your Gemfile)"
-          end
         end
       end
     end

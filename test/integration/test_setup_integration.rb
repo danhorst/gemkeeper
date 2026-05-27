@@ -140,6 +140,58 @@ class TestSetupIntegration < Minitest::Test
     end
   end
 
+  def test_setup_configures_bundler_mirrors
+    Dir.mktmpdir do |tmpdir|
+      output = File.join(tmpdir, "gemkeeper.yml")
+      manifest = File.join(tmpdir, "manifest.yml")
+      bundle_cfg = File.join(tmpdir, "bundle_cfg")
+
+      result = run_gemkeeper(
+        "setup", FIXTURE_LOCKFILE,
+        "--manifest", manifest,
+        "--config", output,
+        env: { "BUNDLE_APP_CONFIG" => bundle_cfg }
+      )
+
+      assert_match(%r{Configured:.*mirror\.https://rubygems\.pkg\.github\.com}, result[:stdout])
+      assert_match(/localhost:9292/, result[:stdout])
+    end
+  end
+
+  def test_setup_skip_bundler_config_omits_mirror_setup
+    Dir.mktmpdir do |tmpdir|
+      output = File.join(tmpdir, "gemkeeper.yml")
+      manifest = File.join(tmpdir, "manifest.yml")
+
+      result = run_gemkeeper(
+        "setup", FIXTURE_LOCKFILE,
+        "--manifest", manifest,
+        "--config", output,
+        "--skip-bundler-config"
+      )
+
+      assert result[:status].success?
+      refute_match(/Configured:/, result[:stdout])
+    end
+  end
+
+  def test_setup_global_uses_global_bundler_scope
+    Dir.mktmpdir do |tmpdir|
+      global_path = File.join(tmpdir, "gemkeeper.yml")
+      manifest = File.join(tmpdir, "manifest.yml")
+      bundle_cfg = File.join(tmpdir, "bundle_cfg")
+
+      result = run_gemkeeper(
+        "setup", FIXTURE_LOCKFILE,
+        "--manifest", manifest,
+        "--global",
+        env: { "GEMKEEPER_GLOBAL_CONFIG" => global_path, "BUNDLE_USER_CONFIG" => bundle_cfg }
+      )
+
+      assert_match(/--global/, result[:stdout])
+    end
+  end
+
   def test_setup_command_appears_in_help
     result = run_gemkeeper("setup", "--help")
 
