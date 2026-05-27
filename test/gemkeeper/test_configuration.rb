@@ -128,6 +128,47 @@ class TestConfiguration < Minitest::Test
     assert(paths.any? { |p| p.include?(".config/gemkeeper") })
   end
 
+  def test_resolve_global_path_uses_env_var_override
+    Dir.mktmpdir do |tmpdir|
+      global_path = File.join(tmpdir, "gemkeeper.yml")
+
+      with_env("GEMKEEPER_GLOBAL_CONFIG" => global_path) do
+        assert_equal global_path, Gemkeeper::Configuration.resolve_global_path
+      end
+    end
+  end
+
+  def test_resolve_global_path_returns_nil_when_no_parent_exists
+    with_env("GEMKEEPER_GLOBAL_CONFIG" => "/nonexistent/parent/gemkeeper.yml") do
+      assert_nil Gemkeeper::Configuration.resolve_global_path
+    end
+  end
+
+  def test_global_data_dir_for_etc_based_path
+    result = Gemkeeper::Configuration.global_data_dir("/opt/homebrew/etc/gemkeeper.yml")
+    assert_equal "/opt/homebrew/var/gemkeeper", result
+  end
+
+  def test_global_data_dir_for_xdg_path
+    result = Gemkeeper::Configuration.global_data_dir(File.expand_path("~/.config/gemkeeper/config.yml"))
+    assert_equal File.expand_path("~/.config/gemkeeper"), result
+  end
+
+  def test_global_data_dir_for_arbitrary_dir
+    result = Gemkeeper::Configuration.global_data_dir("/tmp/some/dir/gemkeeper.yml")
+    assert_equal "/tmp/some/dir", result
+  end
+
+  private
+
+  def with_env(vars)
+    old = vars.keys.to_h { |k| [k, ENV.fetch(k, nil)] }
+    vars.each { |k, v| ENV[k] = v }
+    yield
+  ensure
+    old.each { |k, v| v.nil? ? ENV.delete(k) : ENV.store(k, v) }
+  end
+
   def test_from_lockfile_version_recognized
     File.write("gemkeeper.yml", <<~YAML)
       gems:

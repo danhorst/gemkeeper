@@ -119,4 +119,90 @@ class TestSetupIntegration < Minitest::Test
     assert_match(/LOCKFILE_PATH/, result[:stdout])
     assert_match(/manifest/i, result[:stdout])
   end
+
+  def test_global_writes_to_resolved_path
+    Dir.mktmpdir do |tmpdir|
+      global_path = File.join(tmpdir, "gemkeeper.yml")
+
+      result = run_gemkeeper(
+        "setup", FIXTURE_LOCKFILE,
+        "--manifest", FIXTURE_MANIFEST,
+        "--global",
+        env: { "GEMKEEPER_GLOBAL_CONFIG" => global_path }
+      )
+
+      assert result[:status].success?, "Expected success:\n#{result[:stderr]}"
+      assert File.exist?(global_path), "Global config was not created"
+
+      config = YAML.safe_load_file(global_path)
+      gem_names = config["gems"].map { |g| File.basename(g["repo"]) }
+      assert_includes gem_names, "internal-gem-one"
+      assert_includes gem_names, "internal-gem-two"
+    end
+  end
+
+  def test_global_uses_absolute_paths
+    Dir.mktmpdir do |tmpdir|
+      global_path = File.join(tmpdir, "gemkeeper.yml")
+
+      run_gemkeeper(
+        "setup", FIXTURE_LOCKFILE,
+        "--manifest", FIXTURE_MANIFEST,
+        "--global",
+        env: { "GEMKEEPER_GLOBAL_CONFIG" => global_path }
+      )
+
+      config = YAML.safe_load_file(global_path)
+      assert config["repos_path"].start_with?("/"), "repos_path should be absolute"
+      assert config["gems_path"].start_with?("/"), "gems_path should be absolute"
+    end
+  end
+
+  def test_global_merges_with_existing_config
+    Dir.mktmpdir do |tmpdir|
+      global_path = File.join(tmpdir, "gemkeeper.yml")
+      existing = { "port" => 8080, "repos_path" => "/custom/repos", "gems" => [] }
+      File.write(global_path, existing.to_yaml)
+
+      run_gemkeeper(
+        "setup", FIXTURE_LOCKFILE,
+        "--manifest", FIXTURE_MANIFEST,
+        "--global",
+        env: { "GEMKEEPER_GLOBAL_CONFIG" => global_path }
+      )
+
+      config = YAML.safe_load_file(global_path)
+      assert_equal 8080, config["port"], "Existing port should be preserved"
+      assert_equal "/custom/repos", config["repos_path"], "Existing repos_path should be preserved"
+      refute_empty config["gems"]
+    end
+  end
+
+  def test_global_and_config_are_mutually_exclusive
+    Dir.mktmpdir do |tmpdir|
+      result = run_gemkeeper(
+        "setup", FIXTURE_LOCKFILE,
+        "--manifest", FIXTURE_MANIFEST,
+        "--global",
+        "--config", File.join(tmpdir, "gemkeeper.yml"),
+        allow_failure: true
+      )
+
+      refute result[:status].success?
+      assert_match(/mutually exclusive/, result[:stderr])
+    end
+  end
+
+  def test_global_fails_when_no_writable_path
+    result = run_gemkeeper(
+      "setup", FIXTURE_LOCKFILE,
+      "--manifest", FIXTURE_MANIFEST,
+      "--global",
+      allow_failure: true,
+      env: { "GEMKEEPER_GLOBAL_CONFIG" => "/nonexistent/parent/gemkeeper.yml" }
+    )
+
+    refute result[:status].success?
+    assert_match(/no writable global config path/i, result[:stderr])
+  end
 end

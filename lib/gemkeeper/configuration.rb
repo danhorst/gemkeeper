@@ -17,6 +17,33 @@ module Gemkeeper
       -> { "/opt/homebrew/etc/gemkeeper.yml" }                         # Homebrew (Apple Silicon)
     ].freeze
 
+    # Candidate paths for the global service config, in priority order
+    GLOBAL_CONFIG_PATHS = [
+      -> { "/opt/homebrew/etc/gemkeeper.yml" },
+      -> { "/usr/local/etc/gemkeeper.yml" },
+      -> { File.expand_path("~/.config/gemkeeper/config.yml") }
+    ].freeze
+
+    def self.global_config_paths
+      override = ENV.fetch("GEMKEEPER_GLOBAL_CONFIG", nil)
+      return [override] if override
+
+      GLOBAL_CONFIG_PATHS.map(&:call)
+    end
+
+    def self.resolve_global_path
+      global_config_paths.find { |path| File.directory?(File.dirname(path)) }
+    end
+
+    def self.global_data_dir(config_path)
+      config_dir = File.dirname(File.expand_path(config_path))
+      if config_dir.end_with?("/etc")
+        File.join(File.dirname(config_dir), "var", "gemkeeper")
+      else
+        config_dir
+      end
+    end
+
     attr_reader :port, :repos_path, :gems_path, :pid_file, :gems
 
     def self.load(config_path = nil)

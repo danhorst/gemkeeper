@@ -15,6 +15,7 @@ code_paths = FileList["lib/**/*.rb"]
 
 RubyCritic::RakeTask.new do |task|
   task.paths = code_paths
+  task.options = "--no-browser --minimum-score 90"
 end
 
 RubyCritic::RakeTask.new("rubycritic:headless", "Run RubyCritic (headless)") do |task|
