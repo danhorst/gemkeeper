@@ -70,10 +70,15 @@ jobs:
             echo "already_published=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Configure RubyGems credentials
+        if: steps.check_gem.outputs.already_published != 'true'
+        uses: rubygems/configure-rubygems-credentials@v1
+
       - name: Build and push gem
         if: steps.check_gem.outputs.already_published != 'true'
-        uses: rubygems/release-gem@v1
-        continue-on-error: true  # rubygems-await polls the full index, which lags; the SHA step confirms availability
+        run: |
+          bundle exec rake build
+          gem push pkg/gemkeeper-*.gem
 
       - name: Compute gem SHA256
         id: sha
