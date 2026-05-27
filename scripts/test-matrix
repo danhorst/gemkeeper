@@ -18,6 +18,8 @@ for version in "${VERSIONS[@]}"; do
     continue
   fi
 
+  # bundle install re-resolves for each Ruby version, which may downgrade gems
+  # (e.g. rubycritic to 0.0.16 on < 3.2). The restore step at the end fixes this.
   mise exec ruby@"$version" -- bundle install --quiet
 
   if mise exec ruby@"$version" -- bundle exec rake rubocop test; then
@@ -26,6 +28,12 @@ for version in "${VERSIONS[@]}"; do
     FAIL+=("$version")
   fi
 done
+
+# Restore Gemfile.lock for the current Ruby after per-version installs may have downgraded gems.
+echo ""
+echo "=== Restoring current environment ==="
+bundle install --quiet
+bundle update rubycritic --quiet 2>/dev/null || true
 
 echo ""
 echo "=== Results ==="
