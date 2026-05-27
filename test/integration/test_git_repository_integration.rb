@@ -111,19 +111,27 @@ class TestGitRepositoryIntegration < Minitest::Test
 
   private
 
+  def configure_git
+    system("git", "config", "user.email", "test@example.com", out: File::NULL, err: File::NULL)
+    system("git", "config", "user.name", "Test User", out: File::NULL, err: File::NULL)
+    system("git", "config", "commit.gpgSign", "false", out: File::NULL, err: File::NULL)
+    system("git", "config", "tag.gpgSign", "false", out: File::NULL, err: File::NULL)
+  end
+
+  def with_clone(name)
+    work_dir = File.join(@temp_dir, name)
+    system("git", "clone", @remote_repo, work_dir, out: File::NULL, err: File::NULL)
+    Dir.chdir(work_dir) { configure_git; yield }
+  ensure
+    FileUtils.rm_rf(work_dir)
+  end
+
   def create_bare_remote_repo
-    # Create a working repo first
     work_dir = File.join(@temp_dir, "work")
     FileUtils.mkdir_p(work_dir)
-
     Dir.chdir(work_dir) do
       system("git", "init", "-b", "main", out: File::NULL, err: File::NULL)
-      system("git", "config", "user.email", "test@example.com", out: File::NULL, err: File::NULL)
-      system("git", "config", "user.name", "Test User", out: File::NULL, err: File::NULL)
-      system("git", "config", "commit.gpgSign", "false", out: File::NULL, err: File::NULL)
-      system("git", "config", "tag.gpgSign", "false", out: File::NULL, err: File::NULL)
-
-      # Create a gemspec
+      configure_git
       File.write("test.gemspec", <<~RUBY)
         Gem::Specification.new do |spec|
           spec.name = "test"
@@ -132,49 +140,28 @@ class TestGitRepositoryIntegration < Minitest::Test
           spec.summary = "Test gem"
         end
       RUBY
-
       system("git", "add", ".", out: File::NULL, err: File::NULL)
       system("git", "commit", "-m", "Initial commit", out: File::NULL, err: File::NULL)
     end
-
-    # Clone to bare repo
     system("git", "clone", "--bare", work_dir, @remote_repo, out: File::NULL, err: File::NULL)
     FileUtils.rm_rf(work_dir)
   end
 
   def add_commit_to_remote(message)
-    # Clone remote, add commit, push
-    work_dir = File.join(@temp_dir, "push_work")
-    system("git", "clone", @remote_repo, work_dir, out: File::NULL, err: File::NULL)
-
-    Dir.chdir(work_dir) do
-      system("git", "config", "user.email", "test@example.com", out: File::NULL, err: File::NULL)
-      system("git", "config", "user.name", "Test User", out: File::NULL, err: File::NULL)
-      system("git", "config", "commit.gpgSign", "false", out: File::NULL, err: File::NULL)
+    with_clone("push_work") do
       File.write("new_file.txt", message)
       system("git", "add", ".", out: File::NULL, err: File::NULL)
       system("git", "commit", "-m", message, out: File::NULL, err: File::NULL)
       system("git", "push", out: File::NULL, err: File::NULL)
     end
-
-    FileUtils.rm_rf(work_dir)
   end
 
   def create_tag_in_remote(tag_name)
-    work_dir = File.join(@temp_dir, "tag_work")
-    system("git", "clone", @remote_repo, work_dir, out: File::NULL, err: File::NULL)
-
-    Dir.chdir(work_dir) do
-      system("git", "config", "user.email", "test@example.com", out: File::NULL, err: File::NULL)
-      system("git", "config", "user.name", "Test User", out: File::NULL, err: File::NULL)
-      system("git", "config", "tag.gpgSign", "false", out: File::NULL, err: File::NULL)
+    with_clone("tag_work") do
       system("git", "tag", tag_name, out: File::NULL, err: File::NULL)
       system("git", "push", "--tags", out: File::NULL, err: File::NULL)
     end
 
-    FileUtils.rm_rf(work_dir)
-
-    # Also fetch in local
     return unless File.directory?(@local_repo)
 
     Dir.chdir(@local_repo) do
@@ -182,28 +169,12 @@ class TestGitRepositoryIntegration < Minitest::Test
     end
   end
 
-  def get_head_commit(repo_path)
-    Dir.chdir(repo_path) do
-      `git rev-parse HEAD`.strip
-    end
-  end
-
-  def get_current_ref(repo_path)
-    Dir.chdir(repo_path) do
-      `git describe --tags --always 2>/dev/null || git rev-parse --short HEAD`.strip
-    end
-  end
-
   def create_remote_with_require_relative_version
     work_dir = File.join(@temp_dir, "require_work")
     FileUtils.mkdir_p(File.join(work_dir, "lib", "my_gem"))
-
     Dir.chdir(work_dir) do
       system("git", "init", "-b", "main", out: File::NULL, err: File::NULL)
-      system("git", "config", "user.email", "test@example.com", out: File::NULL, err: File::NULL)
-      system("git", "config", "user.name", "Test User", out: File::NULL, err: File::NULL)
-      system("git", "config", "commit.gpgSign", "false", out: File::NULL, err: File::NULL)
-
+      configure_git
       File.write("my_gem.gemspec", <<~RUBY)
         require_relative "lib/my_gem/version"
         Gem::Specification.new do |spec|
@@ -217,18 +188,22 @@ class TestGitRepositoryIntegration < Minitest::Test
           VERSION = "1.5.0"
         end
       RUBY
-
       system("git", "add", ".", out: File::NULL, err: File::NULL)
       system("git", "commit", "-m", "Initial commit", out: File::NULL, err: File::NULL)
     end
-
     system("git", "clone", "--bare", work_dir, @require_remote, out: File::NULL, err: File::NULL)
     FileUtils.rm_rf(work_dir)
   end
 
+  def get_head_commit(repo_path)
+    Dir.chdir(repo_path) { `git rev-parse HEAD`.strip }
+  end
+
+  def get_current_ref(repo_path)
+    Dir.chdir(repo_path) { `git describe --tags --always 2>/dev/null || git rev-parse --short HEAD`.strip }
+  end
+
   def get_current_branch(repo_path)
-    Dir.chdir(repo_path) do
-      `git rev-parse --abbrev-ref HEAD`.strip
-    end
+    Dir.chdir(repo_path) { `git rev-parse --abbrev-ref HEAD`.strip }
   end
 end

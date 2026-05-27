@@ -23,19 +23,21 @@ class TestConfigGenerator < Minitest::Test
     Gemkeeper::ConfigGenerator.new(manifest: @manifest, lockfile_versions: @lockfile_versions)
   end
 
+  def gem_repo_names(config)
+    config["gems"].map { |entry| File.basename(entry["repo"]) }
+  end
+
   def test_build_includes_gems_present_in_lockfile
     config = generator.build(@output_path, force: false)
 
-    gem_names = config["gems"].map { |g| File.basename(g["repo"]) }
-    assert_includes gem_names, "internal-gem-one"
-    assert_includes gem_names, "internal-gem-two"
+    assert_includes gem_repo_names(config), "internal-gem-one"
+    assert_includes gem_repo_names(config), "internal-gem-two"
   end
 
   def test_build_excludes_gems_not_in_lockfile
     config = generator.build(@output_path, force: false)
 
-    gem_names = config["gems"].map { |g| File.basename(g["repo"]) }
-    refute_includes gem_names, "other-internal-gem"
+    refute_includes gem_repo_names(config), "other-internal-gem"
   end
 
   def test_build_sets_from_lockfile_version
@@ -89,7 +91,7 @@ class TestConfigGenerator < Minitest::Test
 
     config = generator.build(@output_path, force: false)
 
-    repos = config["gems"].map { |g| g["repo"] }
+    repos = config["gems"].map { |entry| entry["repo"] }
     assert_includes repos, "git@github.com:company/other-internal-gem.git"
   end
 
@@ -101,7 +103,7 @@ class TestConfigGenerator < Minitest::Test
 
     config = generator.build(@output_path, force: false)
 
-    gem = config["gems"].find { |g| g["repo"].include?("internal-gem-one") }
-    assert_equal "from_lockfile", gem["version"]
+    gem_entry = config["gems"].find { |entry| entry["repo"].include?("internal-gem-one") }
+    assert_equal "from_lockfile", gem_entry["version"]
   end
 end
