@@ -174,7 +174,14 @@ gemkeeper setup path/to/Gemfile.lock --manifest ~/.config/myorg/manifest.yml
 
 # Overwrite existing gemkeeper.yml entirely
 gemkeeper setup path/to/Gemfile.lock --force
+
+# Write to the global Homebrew service config instead of the current directory
+gemkeeper setup path/to/Gemfile.lock --global
 ```
+
+`--global` targets the system-wide config used by `brew services` — `/opt/homebrew/etc/gemkeeper.yml` on Apple Silicon or `/usr/local/etc/gemkeeper.yml` on Intel.
+It sets `repos_path` and `gems_path` as absolute paths under the corresponding `var` directory so the daemon finds them regardless of which directory you run commands from.
+`--global` and `--config` are mutually exclusive.
 
 ### Gem Synchronization
 
@@ -208,7 +215,18 @@ All commands support:
 
 ### Homebrew Services (macOS)
 
-If installed via Homebrew:
+If installed via Homebrew, gemkeeper can run as a shared system daemon — one server, all projects.
+
+**Configure the service** from any project that has a `Gemfile.lock`:
+
+```bash
+gemkeeper setup path/to/Gemfile.lock --global
+```
+
+This writes `/opt/homebrew/etc/gemkeeper.yml` (Apple Silicon) or `/usr/local/etc/gemkeeper.yml` (Intel) with absolute data paths.
+Run it again from any other project to merge its gems into the shared config.
+
+**Manage the daemon:**
 
 ```bash
 # Start and enable at login

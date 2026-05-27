@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+### Added
+
+- `gemkeeper setup --global` writes the config to the system-wide location used by the Homebrew service (`/opt/homebrew/etc/gemkeeper.yml` on Apple Silicon, `/usr/local/etc/gemkeeper.yml` on Intel, `~/.config/gemkeeper/config.yml` as a fallback) rather than the current project directory.
+  Data paths (`repos_path`, `gems_path`) are written as absolute paths under the corresponding `var` directory so the daemon finds them regardless of working directory.
+  Use this flag when running gemkeeper as a shared `brew services` daemon instead of a per-project process.
+- `--global` and `--config` are mutually exclusive; passing both exits with an error.
+
 ## [0.2.1] - 2026-05-19
 
 ### Fixed
