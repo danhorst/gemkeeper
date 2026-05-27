@@ -117,5 +117,6 @@ jobs:
           git -C tap config user.name "github-actions[bot]"
           git -C tap config user.email "github-actions[bot]@users.noreply.github.com"
           git -C tap add Formula/gemkeeper.rb
+          git -C tap diff --cached --quiet && echo "Tap already up to date, skipping." && exit 0
           git -C tap commit -m "Update gemkeeper to v${BARE}"
           git -C tap push
