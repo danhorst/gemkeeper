@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.3.0] - 2026-05-27
+
 ### Added
 
 - `gemkeeper setup --global` writes the config to the system-wide location used by the Homebrew service (`/opt/homebrew/etc/gemkeeper.yml` on Apple Silicon, `/usr/local/etc/gemkeeper.yml` on Intel, `~/.config/gemkeeper/config.yml` as a fallback) rather than the current project directory.
@@ -33,6 +35,7 @@
 
 - Initial release
 
-[Unreleased]: https://github.com/danhorst/gemkeeper/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/danhorst/gemkeeper/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/danhorst/gemkeeper/compare/0.2.1...0.3.0
 [0.2.1]: https://github.com/danhorst/gemkeeper/compare/0.2.0...0.2.1
 [0.2.0]: https://github.com/danhorst/gemkeeper/compare/0.1.0...0.2.0
