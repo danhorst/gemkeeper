@@ -12,7 +12,7 @@ for version in "${VERSIONS[@]}"; do
   echo ""
   echo "=== Ruby $version ==="
 
-  if ! mise exec ruby@"$version" -- ruby --version > /dev/null 2>&1; then
+  if ! mise ls --installed ruby 2>/dev/null | awk '{print $2}' | grep -q "^${version}\."; then
     echo "  Not installed. Run: mise install ruby@$version"
     SKIP+=("$version")
     continue
