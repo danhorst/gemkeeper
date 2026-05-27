@@ -45,17 +45,65 @@ class TestManifestReader < Minitest::Test
     assert_nil reader.find_by_name("nonexistent-gem")
   end
 
-  def test_raises_when_manifest_not_found
-    assert_raises(Gemkeeper::ManifestNotFoundError) do
-      Gemkeeper::ManifestReader.load(File.join(@temp_dir, "missing.yml"))
+  def test_repo_for_returns_url_for_known_gem
+    reader = Gemkeeper::ManifestReader.load(FIXTURE_MANIFEST)
+
+    assert_equal "https://github.com/company/internal-gem-one", reader.repo_for("internal-gem-one")
+  end
+
+  def test_repo_for_returns_nil_for_unknown_gem
+    reader = Gemkeeper::ManifestReader.load(FIXTURE_MANIFEST)
+
+    assert_nil reader.repo_for("nonexistent-gem")
+  end
+
+  def test_returns_empty_manifest_when_file_missing
+    reader = Gemkeeper::ManifestReader.load(File.join(@temp_dir, "missing.yml"))
+
+    assert_empty reader.gems
+  end
+
+  def test_add_mapping_adds_new_entry
+    reader = Gemkeeper::ManifestReader.load(File.join(@temp_dir, "missing.yml"))
+    reader.add_mapping(name: "my-gem", repo: "git@github.com:org/my-gem.git")
+
+    assert_equal 1, reader.gems.size
+    assert_equal "my-gem", reader.gems[0][:name]
+  end
+
+  def test_add_mapping_is_idempotent_for_same_entry
+    reader = Gemkeeper::ManifestReader.load(File.join(@temp_dir, "missing.yml"))
+    reader.add_mapping(name: "my-gem", repo: "git@github.com:org/my-gem.git")
+    reader.add_mapping(name: "my-gem", repo: "git@github.com:org/my-gem.git")
+
+    assert_equal 1, reader.gems.size
+  end
+
+  def test_add_mapping_raises_on_repo_conflict
+    reader = Gemkeeper::ManifestReader.load(File.join(@temp_dir, "missing.yml"))
+    reader.add_mapping(name: "my-gem", repo: "git@github.com:org/my-gem.git")
+
+    assert_raises(Gemkeeper::ManifestConflictError) do
+      reader.add_mapping(name: "my-gem", repo: "git@github.com:org/other-repo.git")
     end
   end
 
-  def test_error_message_mentions_manifest
-    err = assert_raises(Gemkeeper::ManifestNotFoundError) do
-      Gemkeeper::ManifestReader.load(File.join(@temp_dir, "missing.yml"))
-    end
+  def test_save_writes_yaml_file
+    path = File.join(@temp_dir, "manifest.yml")
+    reader = Gemkeeper::ManifestReader.load(path)
+    reader.add_mapping(name: "my-gem", repo: "git@github.com:org/my-gem.git")
+    reader.save(path)
 
-    assert_match(/manifest/i, err.message)
+    assert File.exist?(path)
+    data = YAML.safe_load_file(path)
+    assert_equal [{ "name" => "my-gem", "repo" => "git@github.com:org/my-gem.git" }], data["gems"]
+  end
+
+  def test_save_creates_parent_directory
+    path = File.join(@temp_dir, "subdir", "manifest.yml")
+    reader = Gemkeeper::ManifestReader.load(path)
+    reader.save(path)
+
+    assert File.exist?(path)
   end
 end

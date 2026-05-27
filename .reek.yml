@@ -17,7 +17,8 @@ detectors:
     - Gemkeeper::ConfigurationError
     - Gemkeeper::ConfigFileNotFoundError
     - Gemkeeper::InvalidConfigError
-    - Gemkeeper::ManifestNotFoundError
+    - Gemkeeper::UnresolvableGemError
+    - Gemkeeper::ManifestConflictError
     - Gemkeeper::GitError
     - Gemkeeper::CloneError
     - Gemkeeper::CheckoutError

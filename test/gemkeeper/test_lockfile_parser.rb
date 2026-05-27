@@ -26,10 +26,10 @@ class TestLockfileParser < Minitest::Test
     assert_equal "0.9.0", versions["internal-gem-two"]
   end
 
-  def test_parse_excludes_git_sourced_gems
+  def test_parse_includes_git_sourced_gems
     versions = Gemkeeper::LockfileParser.parse(FIXTURE_LOCKFILE)
 
-    refute_includes versions, "git-sourced-gem"
+    assert_equal "1.0.0", versions["git-sourced-gem"]
   end
 
   def test_parse_excludes_dependency_lines
@@ -38,6 +38,39 @@ class TestLockfileParser < Minitest::Test
     # Dependencies indented deeper than 4 spaces should not be treated as top-level gems
     # e.g. "      activesupport (>= 6.0)" under internal-gem-two
     assert_equal "7.0.4", versions["activesupport"]
+  end
+
+  def test_internal_sources_returns_git_gems_with_repo
+    sources = Gemkeeper::LockfileParser.internal_sources(FIXTURE_LOCKFILE)
+    git_gem = sources.find { |s| s[:name] == "git-sourced-gem" }
+
+    assert git_gem, "Expected git-sourced-gem in internal sources"
+    assert_equal :git, git_gem[:source_type]
+    assert_equal "git@github.com:company/git-sourced-gem.git", git_gem[:repo]
+  end
+
+  def test_internal_sources_returns_private_gem_registry_entries
+    sources = Gemkeeper::LockfileParser.internal_sources(FIXTURE_LOCKFILE)
+    names = sources.map { |s| s[:name] }
+
+    assert_includes names, "internal-gem-one"
+    assert_includes names, "internal-gem-two"
+  end
+
+  def test_internal_sources_private_gems_have_remote_and_type
+    sources = Gemkeeper::LockfileParser.internal_sources(FIXTURE_LOCKFILE)
+    gem_one = sources.find { |s| s[:name] == "internal-gem-one" }
+
+    assert_equal :private_gem, gem_one[:source_type]
+    assert_equal "https://rubygems.pkg.github.com/company/", gem_one[:remote]
+  end
+
+  def test_internal_sources_excludes_rubygems_org_gems
+    sources = Gemkeeper::LockfileParser.internal_sources(FIXTURE_LOCKFILE)
+    names = sources.map { |s| s[:name] }
+
+    refute_includes names, "actioncable"
+    refute_includes names, "activesupport"
   end
 
   def test_find_returns_lockfile_in_current_dir

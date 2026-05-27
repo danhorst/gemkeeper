@@ -9,13 +9,14 @@ class TestSetupIntegration < Minitest::Test
   FIXTURE_LOCKFILE = File.join(IntegrationHelper::FIXTURES_PATH, "sample.lock")
   FIXTURE_MANIFEST = File.join(IntegrationHelper::FIXTURES_PATH, "sample_manifest.yml")
 
-  def test_setup_generates_gemkeeper_yml
+  def test_setup_generates_gemkeeper_yml_from_lockfile
     Dir.mktmpdir do |tmpdir|
       output = File.join(tmpdir, "gemkeeper.yml")
+      manifest = File.join(tmpdir, "manifest.yml")
 
       result = run_gemkeeper(
         "setup", FIXTURE_LOCKFILE,
-        "--manifest", FIXTURE_MANIFEST,
+        "--manifest", manifest,
         "--config", output
       )
 
@@ -23,18 +24,35 @@ class TestSetupIntegration < Minitest::Test
       assert File.exist?(output), "gemkeeper.yml was not created"
 
       config = YAML.safe_load_file(output)
-      gem_names = config["gems"].map { |gem_entry| File.basename(gem_entry["repo"]) }
+      gem_repos = config["gems"].map { |g| g["repo"] }
 
-      assert_includes gem_names, "internal-gem-one"
-      assert_includes gem_names, "internal-gem-two"
+      assert(gem_repos.any? { |r| r.include?("internal-gem-one") })
+      assert(gem_repos.any? { |r| r.include?("internal-gem-two") })
+      assert(gem_repos.any? { |r| r.include?("git-sourced-gem") })
+    end
+  end
+
+  def test_setup_creates_manifest_from_lockfile
+    Dir.mktmpdir do |tmpdir|
+      output = File.join(tmpdir, "gemkeeper.yml")
+      manifest_path = File.join(tmpdir, "manifest.yml")
+
+      run_gemkeeper("setup", FIXTURE_LOCKFILE, "--manifest", manifest_path, "--config", output)
+
+      assert File.exist?(manifest_path), "manifest.yml was not created"
+      manifest = YAML.safe_load_file(manifest_path)
+      names = manifest["gems"].map { |g| g["name"] }
+      assert_includes names, "git-sourced-gem"
+      assert_includes names, "internal-gem-one"
     end
   end
 
   def test_setup_uses_from_lockfile_version
     Dir.mktmpdir do |tmpdir|
       output = File.join(tmpdir, "gemkeeper.yml")
+      manifest = File.join(tmpdir, "manifest.yml")
 
-      run_gemkeeper("setup", FIXTURE_LOCKFILE, "--manifest", FIXTURE_MANIFEST, "--config", output)
+      run_gemkeeper("setup", FIXTURE_LOCKFILE, "--manifest", manifest, "--config", output)
 
       config = YAML.safe_load_file(output)
       config["gems"].each do |gem_entry|
@@ -43,27 +61,14 @@ class TestSetupIntegration < Minitest::Test
     end
   end
 
-  def test_setup_excludes_gems_not_in_lockfile
-    Dir.mktmpdir do |tmpdir|
-      output = File.join(tmpdir, "gemkeeper.yml")
-
-      run_gemkeeper("setup", FIXTURE_LOCKFILE, "--manifest", FIXTURE_MANIFEST, "--config", output)
-
-      config = YAML.safe_load_file(output)
-      gem_names = config["gems"].map { |gem_entry| File.basename(gem_entry["repo"]) }
-
-      # other-internal-gem is in manifest but not in the lockfile
-      refute_includes gem_names, "other-internal-gem"
-    end
-  end
-
   def test_setup_merges_into_existing_config
     Dir.mktmpdir do |tmpdir|
       output = File.join(tmpdir, "gemkeeper.yml")
+      manifest = File.join(tmpdir, "manifest.yml")
       existing = { "port" => 8080, "repos_path" => "./my_repos", "gems" => [] }
       File.write(output, existing.to_yaml)
 
-      run_gemkeeper("setup", FIXTURE_LOCKFILE, "--manifest", FIXTURE_MANIFEST, "--config", output)
+      run_gemkeeper("setup", FIXTURE_LOCKFILE, "--manifest", manifest, "--config", output)
 
       config = YAML.safe_load_file(output)
       assert_equal 8080, config["port"], "Existing port should be preserved"
@@ -75,10 +80,10 @@ class TestSetupIntegration < Minitest::Test
   def test_setup_force_overwrites_existing_config
     Dir.mktmpdir do |tmpdir|
       output = File.join(tmpdir, "gemkeeper.yml")
+      manifest = File.join(tmpdir, "manifest.yml")
       File.write(output, { "port" => 8080 }.to_yaml)
 
-      run_gemkeeper("setup", FIXTURE_LOCKFILE, "--manifest", FIXTURE_MANIFEST,
-                    "--config", output, "--force")
+      run_gemkeeper("setup", FIXTURE_LOCKFILE, "--manifest", manifest, "--config", output, "--force")
 
       config = YAML.safe_load_file(output)
       assert_equal 9292, config["port"], "Force should reset to default port"
@@ -88,45 +93,67 @@ class TestSetupIntegration < Minitest::Test
   def test_setup_prints_bundle_config_instruction
     Dir.mktmpdir do |tmpdir|
       output = File.join(tmpdir, "gemkeeper.yml")
+      manifest = File.join(tmpdir, "manifest.yml")
 
-      result = run_gemkeeper("setup", FIXTURE_LOCKFILE, "--manifest", FIXTURE_MANIFEST, "--config", output)
+      result = run_gemkeeper("setup", FIXTURE_LOCKFILE, "--manifest", manifest, "--config", output)
 
       assert_match(/bundle config set --local mirror/, result[:stdout])
       assert_match(/localhost:9292/, result[:stdout])
     end
   end
 
-  def test_setup_exits_nonzero_when_manifest_missing
+  def test_setup_with_existing_manifest_reuses_mappings
     Dir.mktmpdir do |tmpdir|
       output = File.join(tmpdir, "gemkeeper.yml")
-      missing_manifest = File.join(tmpdir, "missing.yml")
+      manifest = File.join(tmpdir, "manifest.yml")
+      FileUtils.cp(FIXTURE_MANIFEST, manifest)
 
       result = run_gemkeeper(
         "setup", FIXTURE_LOCKFILE,
-        "--manifest", missing_manifest,
-        "--config", output,
-        allow_failure: true
+        "--manifest", manifest,
+        "--config", output
       )
 
-      refute result[:status].success?
-      assert_match(/manifest/i, result[:stderr])
+      assert result[:status].success?, "Expected success:\n#{result[:stderr]}"
+      config = YAML.safe_load_file(output)
+      gem_repos = config["gems"].map { |g| g["repo"] }
+      assert(gem_repos.any? { |r| r.include?("internal-gem-one") })
+    end
+  end
+
+  def test_setup_from_gemkeeper_yml_updates_manifest
+    Dir.mktmpdir do |tmpdir|
+      source_config = File.join(tmpdir, "source.yml")
+      manifest_path = File.join(tmpdir, "manifest.yml")
+      File.write(source_config, {
+        "port" => 9292,
+        "gems" => [{ "repo" => "git@github.com:org/my-gem.git", "version" => "latest" }]
+      }.to_yaml)
+
+      run_gemkeeper("setup", source_config, "--manifest", manifest_path,
+                    "--config", File.join(tmpdir, "gemkeeper.yml"))
+
+      assert File.exist?(manifest_path)
+      manifest = YAML.safe_load_file(manifest_path)
+      names = manifest["gems"].map { |g| g["name"] }
+      assert_includes names, "my-gem"
     end
   end
 
   def test_setup_command_appears_in_help
     result = run_gemkeeper("setup", "--help")
 
-    assert_match(/LOCKFILE_PATH/, result[:stdout])
-    assert_match(/manifest/i, result[:stdout])
+    assert_match(/SOURCE_PATH/, result[:stdout])
   end
 
   def test_global_writes_to_resolved_path
     Dir.mktmpdir do |tmpdir|
       global_path = File.join(tmpdir, "gemkeeper.yml")
+      manifest = File.join(tmpdir, "manifest.yml")
 
       result = run_gemkeeper(
         "setup", FIXTURE_LOCKFILE,
-        "--manifest", FIXTURE_MANIFEST,
+        "--manifest", manifest,
         "--global",
         env: { "GEMKEEPER_GLOBAL_CONFIG" => global_path }
       )
@@ -135,19 +162,19 @@ class TestSetupIntegration < Minitest::Test
       assert File.exist?(global_path), "Global config was not created"
 
       config = YAML.safe_load_file(global_path)
-      gem_names = config["gems"].map { |gem_entry| File.basename(gem_entry["repo"]) }
-      assert_includes gem_names, "internal-gem-one"
-      assert_includes gem_names, "internal-gem-two"
+      gem_repos = config["gems"].map { |g| g["repo"] }
+      assert(gem_repos.any? { |r| r.include?("internal-gem-one") })
     end
   end
 
   def test_global_uses_absolute_paths
     Dir.mktmpdir do |tmpdir|
       global_path = File.join(tmpdir, "gemkeeper.yml")
+      manifest = File.join(tmpdir, "manifest.yml")
 
       run_gemkeeper(
         "setup", FIXTURE_LOCKFILE,
-        "--manifest", FIXTURE_MANIFEST,
+        "--manifest", manifest,
         "--global",
         env: { "GEMKEEPER_GLOBAL_CONFIG" => global_path }
       )
@@ -161,12 +188,13 @@ class TestSetupIntegration < Minitest::Test
   def test_global_merges_with_existing_config
     Dir.mktmpdir do |tmpdir|
       global_path = File.join(tmpdir, "gemkeeper.yml")
+      manifest = File.join(tmpdir, "manifest.yml")
       existing = { "port" => 8080, "repos_path" => "/custom/repos", "gems" => [] }
       File.write(global_path, existing.to_yaml)
 
       run_gemkeeper(
         "setup", FIXTURE_LOCKFILE,
-        "--manifest", FIXTURE_MANIFEST,
+        "--manifest", manifest,
         "--global",
         env: { "GEMKEEPER_GLOBAL_CONFIG" => global_path }
       )
@@ -180,9 +208,10 @@ class TestSetupIntegration < Minitest::Test
 
   def test_global_and_config_are_mutually_exclusive
     Dir.mktmpdir do |tmpdir|
+      manifest = File.join(tmpdir, "manifest.yml")
       result = run_gemkeeper(
         "setup", FIXTURE_LOCKFILE,
-        "--manifest", FIXTURE_MANIFEST,
+        "--manifest", manifest,
         "--global",
         "--config", File.join(tmpdir, "gemkeeper.yml"),
         allow_failure: true
@@ -194,15 +223,18 @@ class TestSetupIntegration < Minitest::Test
   end
 
   def test_global_fails_when_no_writable_path
-    result = run_gemkeeper(
-      "setup", FIXTURE_LOCKFILE,
-      "--manifest", FIXTURE_MANIFEST,
-      "--global",
-      allow_failure: true,
-      env: { "GEMKEEPER_GLOBAL_CONFIG" => "/nonexistent/parent/gemkeeper.yml" }
-    )
+    Dir.mktmpdir do |tmpdir|
+      manifest = File.join(tmpdir, "manifest.yml")
+      result = run_gemkeeper(
+        "setup", FIXTURE_LOCKFILE,
+        "--manifest", manifest,
+        "--global",
+        allow_failure: true,
+        env: { "GEMKEEPER_GLOBAL_CONFIG" => "/nonexistent/parent/gemkeeper.yml" }
+      )
 
-    refute result[:status].success?
-    assert_match(/no writable global config path/i, result[:stderr])
+      refute result[:status].success?
+      assert_match(/no writable global config path/i, result[:stderr])
+    end
   end
 end

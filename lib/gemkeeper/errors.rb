@@ -6,7 +6,8 @@ module Gemkeeper
   class ConfigurationError < Error; end
   class ConfigFileNotFoundError < ConfigurationError; end
   class InvalidConfigError < ConfigurationError; end
-  class ManifestNotFoundError < ConfigurationError; end
+  class UnresolvableGemError < ConfigurationError; end
+  class ManifestConflictError < ConfigurationError; end
 
   class GitError < Error; end
   class CloneError < GitError; end
