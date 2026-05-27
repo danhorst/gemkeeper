@@ -42,8 +42,8 @@ module Gemkeeper
           gems_to_sync.each do |gem_def|
             result = sync_gem(gem_def, config, uploader)
             counts[result] += 1
-          rescue Error => e
-            failures << { name: gem_def.name, message: e.message }
+          rescue Error => error
+            failures << { name: gem_def.name, message: error.message }
           end
           [counts, failures]
         end
@@ -127,8 +127,8 @@ module Gemkeeper
 
         def fetch_repo(repo, repo_url)
           repo.clone_or_pull
-        rescue GitError => e
-          raise auth_error?(e) ? auth_failure_error(repo_url, e) : e
+        rescue GitError => git_error
+          raise auth_error?(git_error) ? auth_failure_error(repo_url, git_error) : git_error
         end
 
         def checkout_gem_version(repo, version)

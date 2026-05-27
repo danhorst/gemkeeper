@@ -33,10 +33,10 @@ module Gemkeeper
       raise UploadError, "Failed to list gems: #{response.status} #{response.body}" unless response.success?
 
       JSON.parse(response.body)
-    rescue JSON::ParserError => e
-      raise UploadError, "Invalid JSON response: #{e.message}"
-    rescue Faraday::Error => e
-      raise UploadError, "Connection error: #{e.message}"
+    rescue JSON::ParserError => parse_error
+      raise UploadError, "Invalid JSON response: #{parse_error.message}"
+    rescue Faraday::Error => connection_error
+      raise UploadError, "Connection error: #{connection_error.message}"
     end
 
     private
@@ -58,8 +58,8 @@ module Gemkeeper
       else
         raise UploadError, "Upload failed (#{response.status}): #{response.body}"
       end
-    rescue Faraday::Error => e
-      raise UploadError, "Connection error: #{e.message}"
+    rescue Faraday::Error => connection_error
+      raise UploadError, "Connection error: #{connection_error.message}"
     end
   end
 end

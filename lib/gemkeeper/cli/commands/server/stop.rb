@@ -15,11 +15,11 @@ module Gemkeeper
             manager.stop
 
             puts "Geminabox server stopped"
-          rescue ServerNotRunningError => e
-            warn "Error: #{e.message}"
+          rescue ServerNotRunningError => error
+            warn "Error: #{error.message}"
             exit 1
-          rescue ServerError => e
-            warn "Error stopping server: #{e.message}"
+          rescue ServerError => error
+            warn "Error stopping server: #{error.message}"
             exit 1
           end
         end

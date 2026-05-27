@@ -19,6 +19,9 @@ Style/StringLiteralsInInterpolation:
 Style/Documentation:
   Enabled: false
 
+Naming/RescuedExceptionsVariableName:
+  Enabled: false
+
 Metrics/MethodLength:
   Max: 30
 

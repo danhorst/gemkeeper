@@ -30,8 +30,8 @@ module Gemkeeper
           File.write(output_path, config.to_yaml)
           puts "Wrote #{output_path}"
           print_bundler_instructions(config, manifest)
-        rescue ManifestNotFoundError => e
-          warn "Error: #{e.message}"
+        rescue ManifestNotFoundError => error
+          warn "Error: #{error.message}"
           exit 1
         end
 

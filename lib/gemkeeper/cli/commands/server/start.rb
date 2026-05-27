@@ -27,11 +27,11 @@ module Gemkeeper
               puts "Geminabox server started at #{config.geminabox_url}"
               puts "PID: #{File.read(config.pid_file).strip}"
             end
-          rescue ServerAlreadyRunningError => e
-            warn "Error: #{e.message}"
+          rescue ServerAlreadyRunningError => error
+            warn "Error: #{error.message}"
             exit 1
-          rescue ServerError => e
-            warn "Error starting server: #{e.message}"
+          rescue ServerError => error
+            warn "Error starting server: #{error.message}"
             exit 1
           rescue Interrupt
             puts "\nShutting down..."

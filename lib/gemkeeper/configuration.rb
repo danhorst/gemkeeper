@@ -94,8 +94,8 @@ module Gemkeeper
 
       begin
         YAML.safe_load_file(@config_path, permitted_classes: [], symbolize_names: true) || {}
-      rescue Psych::SyntaxError => e
-        raise InvalidConfigError, "Invalid YAML in #{@config_path}: #{e.message}"
+      rescue Psych::SyntaxError => yaml_error
+        raise InvalidConfigError, "Invalid YAML in #{@config_path}: #{yaml_error.message}"
       end
     end
 
