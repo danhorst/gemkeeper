@@ -121,7 +121,10 @@ class TestGitRepositoryIntegration < Minitest::Test
   def with_clone(name)
     work_dir = File.join(@temp_dir, name)
     system("git", "clone", @remote_repo, work_dir, out: File::NULL, err: File::NULL)
-    Dir.chdir(work_dir) { configure_git; yield }
+    Dir.chdir(work_dir) do
+      configure_git
+      yield
+    end
   ensure
     FileUtils.rm_rf(work_dir)
   end
