@@ -16,7 +16,7 @@ module Gemkeeper
 
             if status[:running]
               puts "Geminabox server is running"
-              puts "  PID: #{status[:pid]}"
+              puts "  PID: #{status[:pid]}" if status[:pid]
               puts "  URL: #{status[:url]}"
             else
               puts "Geminabox server is not running"

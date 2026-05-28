@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+### Fixed
+
+- `gemkeeper server status` now correctly detects a running server even when no PID file exists (e.g., when started via `brew services start`).
+  Previously, status relied solely on a PID file that foreground mode never writes.
+  It now falls back to a TCP port check, and the PID line is omitted from the output when the process is not managed directly by gemkeeper.
+- `gemkeeper server stop` now gives a clear error when the server is running but not managed by gemkeeper (no PID file), directing the user to `brew services stop gemkeeper` instead of failing silently.
+
 ## [0.6.4] - 2026-05-28
 
 ### Fixed

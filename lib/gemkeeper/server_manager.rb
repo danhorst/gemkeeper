@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "fileutils"
+require "socket"
 
 module Gemkeeper
   # Owns the rackup/puma lifecycle so CLI commands delegate process management here.
@@ -25,6 +26,10 @@ module Gemkeeper
       raise ServerNotRunningError, "Server is not running" unless running?
 
       pid = read_pid
+      unless pid
+        raise ServerError, "Server is running but not managed by gemkeeper — use 'brew services stop gemkeeper'"
+      end
+
       Process.kill("TERM", pid)
       wait_for_process_exit(pid)
       cleanup_pid_file
@@ -43,18 +48,21 @@ module Gemkeeper
     end
 
     def running?
-      return false unless File.exist?(config.pid_file)
-
-      pid = read_pid
-      return false unless pid
-
-      process_alive?(pid)
+      if File.exist?(config.pid_file)
+        pid = read_pid
+        return process_alive?(pid) if pid
+      end
+      port_open?
     end
 
     private
 
     def ensure_not_running!
-      raise ServerAlreadyRunningError, "Server is already running (PID: #{read_pid})" if running?
+      return unless running?
+
+      pid = read_pid
+      msg = pid ? "Server is already running (PID: #{pid})" : "Server is already running"
+      raise ServerAlreadyRunningError, msg
     end
 
     def wait_for_process_exit(pid)
@@ -78,6 +86,13 @@ module Gemkeeper
       Process.kill(0, pid)
       true
     rescue Errno::ESRCH, Errno::EPERM
+      false
+    end
+
+    def port_open?
+      TCPSocket.new("127.0.0.1", config.port).close
+      true
+    rescue Errno::ECONNREFUSED, Errno::ETIMEDOUT, Errno::EADDRNOTAVAIL
       false
     end
 
