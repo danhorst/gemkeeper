@@ -1,8 +1,15 @@
 ## [Unreleased]
 
+### Added
+
+- `gemkeeper setup` now accepts a directory path and finds `Gemfile.lock` inside it.
+- `gemkeeper setup` now accepts a `Gemfile` path and uses the sibling `Gemfile.lock`.
+- `gemkeeper setup` now works with no arguments by finding the nearest `Gemfile.lock` (walks up from the current directory).
+
 ### Fixed
 
 - `gemkeeper setup` no longer configures a Bundler mirror for a private gem registry when all gems from that source were skipped during manifest resolution.
+- `gemkeeper setup` now reports a clear error when the resolved source path does not exist.
 
 ## [0.5.0] - 2026-05-27
 

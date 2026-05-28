@@ -19,11 +19,11 @@ module IntegrationHelper
     File.join(FIXTURES_PATH, "test_gem")
   end
 
-  def run_gemkeeper(*args, env: {}, allow_failure: false)
+  def run_gemkeeper(*args, env: {}, allow_failure: false, chdir: PROJECT_ROOT)
     cmd = [RbConfig.ruby, "-rbundler/setup", GEMKEEPER_BIN, *args]
     full_env = ENV.to_h.merge(env)
 
-    stdout, stderr, status = Open3.capture3(full_env, *cmd, chdir: PROJECT_ROOT)
+    stdout, stderr, status = Open3.capture3(full_env, *cmd, chdir:)
 
     unless allow_failure || status.success?
       raise "Command failed: #{cmd.join(" ")}\nSTDOUT: #{stdout}\nSTDERR: #{stderr}"

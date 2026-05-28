@@ -289,4 +289,83 @@ class TestSetupIntegration < Minitest::Test
       assert_match(/no writable global config path/i, result[:stderr])
     end
   end
+
+  def test_setup_with_no_args_finds_nearest_lockfile
+    Dir.mktmpdir do |tmpdir|
+      FileUtils.cp(FIXTURE_LOCKFILE, File.join(tmpdir, "Gemfile.lock"))
+      output = File.join(tmpdir, "gemkeeper.yml")
+      manifest = File.join(tmpdir, "manifest.yml")
+
+      result = run_gemkeeper(
+        "setup",
+        "--manifest", manifest,
+        "--config", output,
+        "--skip-bundler-config",
+        chdir: tmpdir
+      )
+
+      assert result[:status].success?, "Expected success:\n#{result[:stderr]}"
+      assert File.exist?(output)
+    end
+  end
+
+  def test_setup_with_directory_finds_lockfile_inside
+    Dir.mktmpdir do |tmpdir|
+      FileUtils.cp(FIXTURE_LOCKFILE, File.join(tmpdir, "Gemfile.lock"))
+      output = File.join(tmpdir, "gemkeeper.yml")
+      manifest = File.join(tmpdir, "manifest.yml")
+
+      result = run_gemkeeper(
+        "setup", tmpdir,
+        "--manifest", manifest,
+        "--config", output,
+        "--skip-bundler-config"
+      )
+
+      assert result[:status].success?, "Expected success:\n#{result[:stderr]}"
+      assert File.exist?(output)
+    end
+  end
+
+  def test_setup_with_gemfile_path_uses_sibling_lockfile
+    Dir.mktmpdir do |tmpdir|
+      FileUtils.cp(FIXTURE_LOCKFILE, File.join(tmpdir, "Gemfile.lock"))
+      File.write(File.join(tmpdir, "Gemfile"), "# stub")
+      output = File.join(tmpdir, "gemkeeper.yml")
+      manifest = File.join(tmpdir, "manifest.yml")
+
+      result = run_gemkeeper(
+        "setup", File.join(tmpdir, "Gemfile"),
+        "--manifest", manifest,
+        "--config", output,
+        "--skip-bundler-config"
+      )
+
+      assert result[:status].success?, "Expected success:\n#{result[:stderr]}"
+      assert File.exist?(output)
+    end
+  end
+
+  def test_setup_with_missing_path_gives_clear_error
+    result = run_gemkeeper(
+      "setup", "/nonexistent/path/Gemfile.lock",
+      allow_failure: true
+    )
+
+    refute result[:status].success?
+    assert_match(/file not found/i, result[:stderr])
+  end
+
+  def test_setup_with_no_args_and_no_lockfile_gives_clear_error
+    Dir.mktmpdir do |tmpdir|
+      result = run_gemkeeper(
+        "setup",
+        allow_failure: true,
+        chdir: tmpdir
+      )
+
+      refute result[:status].success?
+      assert_match(/no Gemfile\.lock found/i, result[:stderr])
+    end
+  end
 end

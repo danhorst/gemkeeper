@@ -6,8 +6,9 @@ module Gemkeeper
       class Setup < Dry::CLI::Command
         desc "Generate gemkeeper.yml from a Gemfile.lock or existing gemkeeper.yml"
 
-        argument :source_path, type: :string, required: true,
-                               desc: "Path to a Gemfile.lock or gemkeeper.yml"
+        argument :source_path, type: :string, required: false,
+                               desc: "Gemfile.lock, Gemfile, directory, or gemkeeper.yml " \
+                                     "(default: nearest Gemfile.lock)"
         option :manifest, type: :string,
                           desc: "Path to gem manifest (default: ~/.config/gemkeeper/manifest.yml)"
         option :config, type: :string, desc: "Path to write gemkeeper.yml (default: ./gemkeeper.yml)"
@@ -18,14 +19,15 @@ module Gemkeeper
         option :skip_bundler_config, type: :boolean, default: false,
                                      desc: "Skip configuring Bundler mirrors for private gem sources"
 
-        def call(source_path:, **options)
+        def call(source_path: nil, **options)
           validate_options!(options)
           output_path = resolve_output_path(options)
+          resolved = resolve_source_path(source_path)
 
-          if lockfile?(source_path)
-            setup_from_lockfile(source_path, output_path, options)
+          if lockfile?(resolved)
+            setup_from_lockfile(resolved, output_path, options)
           else
-            setup_from_config(source_path, output_path, options)
+            setup_from_config(resolved, output_path, options)
           end
         rescue UnresolvableGemError, ManifestConflictError => error
           warn "Error: #{error.message}"
@@ -33,6 +35,19 @@ module Gemkeeper
         end
 
         private
+
+        def resolve_source_path(path)
+          resolved = coerce_source_path(path)
+          File.exist?(resolved) ? resolved : missing_source!(resolved)
+        end
+
+        def coerce_source_path(path)
+          return (LockfileParser.find || no_lockfile!) if path.nil?
+          return File.join(path, "Gemfile.lock") if File.directory?(path)
+          return File.join(File.dirname(path), "Gemfile.lock") if File.basename(path) == "Gemfile"
+
+          path
+        end
 
         def lockfile?(path)
           File.extname(path) == ".lock" || File.basename(path) == "Gemfile.lock"
@@ -112,6 +127,16 @@ module Gemkeeper
 
         def no_global_path!
           warn "Error: no writable global config path found — install Homebrew or create ~/.config/gemkeeper/"
+          exit 1
+        end
+
+        def no_lockfile!
+          warn "Error: no Gemfile.lock found in #{Dir.pwd} or any parent directory"
+          exit 1
+        end
+
+        def missing_source!(path)
+          warn "Error: file not found — #{path}"
           exit 1
         end
       end
