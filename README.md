@@ -70,14 +70,16 @@ Public gems are proxied from RubyGems.org automatically.
 
 ## Quick Start
 
-1. Create a configuration file at `~/.config/gemkeeper/config.yml`:
+1. Ensure your org manifest is present at `~/.config/gemkeeper/manifest.yml` (see [Workstation Setup](#workstation-setup)), then create a project `gemkeeper.yml`:
 
 ```yaml
 port: 9292
 gems:
-  - repo: https://github.com/company/internal-gem
+  - name: internal-gem
     version: latest
 ```
+
+The repo URL for `internal-gem` is resolved from the manifest at sync time.
 
 2. Start the server:
 
@@ -127,18 +129,21 @@ pid_file: ./cache/gemkeeper.pid
 
 # List of gems to manage
 gems:
-  # HTTPS is recommended — works without SSH key setup (alternative: git@github.com:company/gem-one.git)
-  - repo: https://github.com/company/gem-one
+  # Preferred form: name only. The repo URL is resolved from the manifest at sync time.
+  - name: gem-one
     version: latest    # Use the latest commit on main/master; cached by resolved gemspec version
 
-  - repo: https://github.com/company/gem-two
+  - name: gem-two
     version: v1.2.3    # Use a specific tag; both v-prefixed and bare semver accepted
 
-  - repo: https://github.com/company/gem-two
+  - name: gem-two
     version: from_lockfile    # Read version from the nearest Gemfile.lock
 
-  - repo: https://github.com/company/ruby-gem-three
-    name: gem-three    # Override the gem name (strips "ruby-" prefix by default)
+  # repo: is optional — a per-project override for gems not in the manifest (HTTPS recommended,
+  # works without SSH key setup; alternative: git@github.com:company/gem-three.git). When both are
+  # present, repo: wins and sync warns if it diverges from the manifest.
+  - name: gem-three
+    repo: https://github.com/company/ruby-gem-three
 ```
 
 ## CLI Commands
@@ -169,9 +174,6 @@ gemkeeper server status
 # Generate gemkeeper.yml from a Gemfile.lock and org manifest
 gemkeeper setup path/to/Gemfile.lock
 
-# Use an existing gemkeeper.yml as input (updates manifest, optionally installs as global config)
-gemkeeper setup path/to/gemkeeper.yml
-
 # Use a custom manifest path
 gemkeeper setup path/to/Gemfile.lock --manifest ~/.config/myorg/manifest.yml
 
@@ -195,7 +197,8 @@ It sets `repos_path` and `gems_path` as absolute paths under the corresponding `
 ### Manifest Management
 
 The manifest (`~/.config/gemkeeper/manifest.yml`) is the global name→repo lookup table shared across projects.
-`manifest generate` builds or updates it; `setup` reads it.
+`manifest generate` builds or updates it; `setup` reads it, and `sync` resolves each gem's repo URL from it.
+Because `gemkeeper.yml` entries omit `repo:`, the manifest must be present before `sync`; run `gemkeeper manifest validate --resolve` first to confirm every gem maps to a reachable repo.
 
 ```bash
 # Build or update the manifest from a Gemfile.lock

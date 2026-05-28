@@ -122,7 +122,8 @@ class TestCLIIntegration < Minitest::Test
       }
       File.write(config_path, config.to_yaml)
 
-      result = run_gemkeeper("sync", "--config", config_path)
+      # Isolate HOME so sync's manifest lookup can't read the developer's real ~/.config/gemkeeper/manifest.yml
+      result = run_gemkeeper("sync", "--config", config_path, env: { "HOME" => temp_dir })
 
       assert_match(/already cached/, result[:stdout])
       assert_match(/Sync complete:/, result[:stdout])

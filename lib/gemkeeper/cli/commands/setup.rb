@@ -6,11 +6,10 @@ module Gemkeeper
       class Setup < Dry::CLI::Command
         include CLI::LockfileResolution
 
-        desc "Generate gemkeeper.yml from a Gemfile.lock or existing gemkeeper.yml"
+        desc "Generate gemkeeper.yml from a Gemfile.lock"
 
         argument :source_path, type: :string, required: false,
-                               desc: "Gemfile.lock, Gemfile, directory, or gemkeeper.yml " \
-                                     "(default: nearest Gemfile.lock)"
+                               desc: "Gemfile.lock, Gemfile, or directory (default: nearest Gemfile.lock)"
         option :manifest, type: :string,
                           desc: "Path to gem manifest (default: ~/.config/gemkeeper/manifest.yml)"
         option :config, type: :string, desc: "Path to write gemkeeper.yml (default: ./gemkeeper.yml)"
@@ -25,12 +24,9 @@ module Gemkeeper
           validate_options!(options)
           output_path = resolve_output_path(options)
           resolved = resolve_source_path(source_path)
+          not_a_lockfile!(resolved) unless lockfile?(resolved)
 
-          if lockfile?(resolved)
-            setup_from_lockfile(resolved, output_path, options)
-          else
-            setup_from_config(resolved, output_path, options)
-          end
+          setup_from_lockfile(resolved, output_path, options)
         rescue UnresolvableGemError, ManifestConflictError => error
           warn "Error: #{error.message}"
           exit 1
@@ -61,36 +57,10 @@ module Gemkeeper
           BundlerMirrorConfigurator.new(resolved, port:, global: options[:global]).configure
         end
 
-        def setup_from_config(source_path, output_path, options)
-          source = YAML.safe_load_file(source_path, permitted_classes: [], symbolize_names: false) || {}
-          manifest = load_manifest(options)
-          update_manifest_from_config(source, manifest, options)
-          install_global_config(source, output_path) if options[:global]
-        end
-
-        def update_manifest_from_config(source, manifest, options)
-          (source["gems"] || []).each do |entry|
-            repo = entry["repo"].to_s
-            next if repo.empty?
-
-            name = File.basename(repo, ".git").sub(/^ruby-/, "")
-            manifest.add_mapping(name:, repo:)
-          end
-          manifest.save(manifest_path(options))
-        end
-
-        def install_global_config(source, output_path)
-          existing = File.exist?(output_path) ? (YAML.safe_load_file(output_path) || {}) : {}
-          merged = existing.merge(source.except("gems")).merge("gems" => merge_gem_lists(existing, source))
-          File.write(output_path, merged.to_yaml)
-          puts "Wrote #{output_path}"
-        end
-
-        def merge_gem_lists(existing, source)
-          existing_gems = existing["gems"] || []
-          source_gems = source["gems"] || []
-          existing_repos = existing_gems.to_set { |g| g["repo"] }
-          existing_gems + source_gems.reject { |g| existing_repos.include?(g["repo"]) }
+        def not_a_lockfile!(path)
+          warn "Error: setup builds from a Gemfile.lock, Gemfile, or directory — got #{path}. " \
+               "To populate the manifest, run 'gemkeeper manifest generate'."
+          exit 1
         end
 
         def load_manifest(options)

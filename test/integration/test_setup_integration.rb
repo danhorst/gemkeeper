@@ -24,11 +24,11 @@ class TestSetupIntegration < Minitest::Test
       assert File.exist?(output), "gemkeeper.yml was not created"
 
       config = YAML.safe_load_file(output)
-      gem_repos = config["gems"].map { |g| g["repo"] }
+      gem_names = config["gems"].map { |g| g["name"] }
 
-      assert(gem_repos.any? { |r| r.include?("internal-gem-one") })
-      assert(gem_repos.any? { |r| r.include?("internal-gem-two") })
-      assert(gem_repos.any? { |r| r.include?("git-sourced-gem") })
+      assert_includes gem_names, "internal-gem-one"
+      assert_includes gem_names, "internal-gem-two"
+      assert_includes gem_names, "git-sourced-gem"
     end
   end
 
@@ -116,27 +116,22 @@ class TestSetupIntegration < Minitest::Test
 
       assert result[:status].success?, "Expected success:\n#{result[:stderr]}"
       config = YAML.safe_load_file(output)
-      gem_repos = config["gems"].map { |g| g["repo"] }
-      assert(gem_repos.any? { |r| r.include?("internal-gem-one") })
+      gem_names = config["gems"].map { |g| g["name"] }
+      assert_includes gem_names, "internal-gem-one"
     end
   end
 
-  def test_setup_from_gemkeeper_yml_updates_manifest
+  def test_setup_rejects_non_lockfile_source
     Dir.mktmpdir do |tmpdir|
-      source_config = File.join(tmpdir, "source.yml")
-      manifest_path = File.join(tmpdir, "manifest.yml")
-      File.write(source_config, {
-        "port" => 9292,
-        "gems" => [{ "repo" => "git@github.com:org/my-gem.git", "version" => "latest" }]
-      }.to_yaml)
+      source_config = File.join(tmpdir, "gemkeeper.yml")
+      File.write(source_config, { "gems" => [{ "name" => "my-gem", "version" => "latest" }] }.to_yaml)
 
-      run_gemkeeper("setup", source_config, "--manifest", manifest_path,
-                    "--config", File.join(tmpdir, "gemkeeper.yml"))
+      result = run_gemkeeper("setup", source_config,
+                             "--config", File.join(tmpdir, "out.yml"), allow_failure: true)
 
-      assert File.exist?(manifest_path)
-      manifest = YAML.safe_load_file(manifest_path)
-      names = manifest["gems"].map { |g| g["name"] }
-      assert_includes names, "my-gem"
+      refute result[:status].success?, "Expected non-zero exit for a non-lockfile source"
+      assert_match(/Gemfile\.lock/, result[:stderr])
+      assert_match(/manifest generate/, result[:stderr])
     end
   end
 
@@ -214,8 +209,8 @@ class TestSetupIntegration < Minitest::Test
       assert File.exist?(global_path), "Global config was not created"
 
       config = YAML.safe_load_file(global_path)
-      gem_repos = config["gems"].map { |g| g["repo"] }
-      assert(gem_repos.any? { |r| r.include?("internal-gem-one") })
+      gem_names = config["gems"].map { |g| g["name"] }
+      assert_includes gem_names, "internal-gem-one"
     end
   end
 

@@ -127,9 +127,11 @@ module Gemkeeper
       attr_reader :repo, :version, :name
 
       def initialize(config)
-        @repo = config[:repo] or raise InvalidConfigError, "Gem definition missing 'repo'"
-        @version = config[:version] || "latest"
+        @repo = config[:repo]
         @name = config[:name] || extract_name_from_repo
+        raise InvalidConfigError, "Gem definition needs a 'name' or 'repo'" unless @name
+
+        @version = config[:version] || "latest"
         validate_version!
       end
 
@@ -153,6 +155,8 @@ module Gemkeeper
       end
 
       def extract_name_from_repo
+        return nil unless @repo
+
         File.basename(@repo, ".git").sub(/^ruby-/, "")
       end
     end

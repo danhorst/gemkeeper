@@ -1,5 +1,18 @@
 ## [Unreleased]
 
+### Changed
+
+- `gemkeeper setup` and `gemkeeper manifest generate` no longer write `repo:` into generated `gemkeeper.yml` entries.
+  The repo URL is resolved from the manifest by gem name at sync time, making the manifest the single source of truth for name→repo mappings.
+  Re-running `setup` strips `repo:` from matched entries, promoting them to manifest-only.
+- `gemkeeper setup` now accepts only a `Gemfile.lock`, `Gemfile`, or directory as its source.
+  The path that imported an existing `gemkeeper.yml` into the manifest has been removed — it only made sense when configs carried `repo:`; populate the manifest with `gemkeeper manifest generate` or `setup` from a lockfile instead.
+
+### Added
+
+- `repo:` in `gemkeeper.yml` is now optional. When absent, `gemkeeper sync` resolves it from the manifest (`~/.config/gemkeeper/manifest.yml`) by gem name.
+  It remains a supported per-project override (escape hatch) for gems not in the manifest; `sync` warns when an explicit `repo:` diverges from the manifest and uses the `gemkeeper.yml` value.
+
 ## [0.6.7] - 2026-05-28
 
 ### Fixed

@@ -23,21 +23,29 @@ class TestConfigGenerator < Minitest::Test
     Gemkeeper::ConfigGenerator.new(manifest: @manifest, lockfile_versions: @lockfile_versions)
   end
 
-  def gem_repo_names(config)
-    config["gems"].map { |entry| File.basename(entry["repo"]) }
+  def gem_names(config)
+    config["gems"].map { |entry| entry["name"] }
   end
 
   def test_build_includes_gems_present_in_lockfile
     config = generator.build(@output_path, force: false)
 
-    assert_includes gem_repo_names(config), "internal-gem-one"
-    assert_includes gem_repo_names(config), "internal-gem-two"
+    assert_includes gem_names(config), "internal-gem-one"
+    assert_includes gem_names(config), "internal-gem-two"
+  end
+
+  def test_build_omits_repo_field
+    config = generator.build(@output_path, force: false)
+
+    config["gems"].each do |entry|
+      refute entry.key?("repo"), "Generated entries should not carry a repo field"
+    end
   end
 
   def test_build_excludes_gems_not_in_lockfile
     config = generator.build(@output_path, force: false)
 
-    refute_includes gem_repo_names(config), "other-internal-gem"
+    refute_includes gem_names(config), "other-internal-gem"
   end
 
   def test_build_sets_from_lockfile_version
@@ -111,11 +119,11 @@ class TestConfigGenerator < Minitest::Test
 
     config = generator.build(@output_path, force: false)
 
-    gem_entry = config["gems"].find { |entry| entry["repo"].include?("internal-gem-one") }
+    gem_entry = config["gems"].find { |entry| entry["name"] == "internal-gem-one" }
     assert_equal "from_lockfile", gem_entry["version"]
   end
 
-  def test_merge_matches_existing_entry_by_explicit_name_when_repo_was_renamed
+  def test_merge_strips_repo_from_matched_entry
     existing = {
       "gems" => [{
         "name" => "internal-gem-one",
@@ -130,6 +138,6 @@ class TestConfigGenerator < Minitest::Test
     gem_entry = config["gems"].find { |entry| entry["name"] == "internal-gem-one" }
     assert gem_entry, "Expected to find internal-gem-one in merged config"
     assert_equal "from_lockfile", gem_entry["version"]
-    assert_equal "https://github.com/company/internal-gem-one", gem_entry["repo"]
+    refute gem_entry.key?("repo"), "Matched entry should be promoted to manifest-only (no repo)"
   end
 end

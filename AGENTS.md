@@ -45,10 +45,14 @@ repos_path: ./cache/repos
 gems_path: ./cache/gems
 
 gems:
-  - repo: git@github.com:company/internal-gem-1.git
+  - name: internal-gem-1
     version: latest
-  - repo: git@github.com:company/internal-gem-2.git
+  - name: internal-gem-2
     version: v2.3.1
+  # repo: is an optional override for gems not in the manifest
+  - name: internal-gem-3
+    repo: git@github.com:company/internal-gem-3.git
+    version: v1.0.0
 ```
 
 ## CLI Commands
@@ -67,7 +71,9 @@ gems:
 
 The manifest (`~/.config/gemkeeper/manifest.yml` by default) is a global name→repo lookup table shared across projects.
 It maps gem names to their source repo URLs and is built/updated by `setup` (from a Gemfile.lock) or `manifest generate`.
-`gemkeeper.yml` is per-project: it lists gems with versions and points at the manifest for repo resolution.
+`gemkeeper.yml` is per-project and intentionally local-only: it lists gems by `name` and `version` and omits `repo:`.
+`sync` resolves each gem's repo URL from the manifest by name (`GemSyncer#resolve_repo`); the manifest is the single source of truth for name→repo.
+An explicit `repo:` in `gemkeeper.yml` is an optional override (escape hatch) for gems not in the manifest — it wins, and `sync` warns when it diverges from the manifest.
 `setup --force` overwrites gemkeeper.yml but never clears the manifest — the manifest accumulates mappings across projects by design.
 
 ## Release

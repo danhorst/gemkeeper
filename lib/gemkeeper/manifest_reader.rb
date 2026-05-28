@@ -5,7 +5,7 @@ module Gemkeeper
   class ManifestReader
     DEFAULT_PATH = File.expand_path("~/.config/gemkeeper/manifest.yml")
 
-    attr_reader :gems, :source_url
+    attr_reader :gems, :source_url, :path
 
     def self.load(path = DEFAULT_PATH)
       new(path)

@@ -22,7 +22,7 @@ module Gemkeeper
     def matched_gems
       matched = @manifest.gems.filter_map do |gem_entry|
         name = gem_entry[:name]
-        { name:, repo: gem_entry[:repo] } if @lockfile_versions.key?(name)
+        { name: } if @lockfile_versions.key?(name)
       end
       warn_unmatched
       matched
@@ -47,7 +47,7 @@ module Gemkeeper
 
     def build_fresh(matched, global_output_path: nil)
       repos_path, gems_path = data_paths_for(global_output_path)
-      gem_entries = matched.map { |g| { "name" => g[:name], "repo" => g[:repo], "version" => "from_lockfile" } }
+      gem_entries = matched.map { |g| { "name" => g[:name], "version" => "from_lockfile" } }
       { "port" => Configuration::DEFAULT_PORT, "repos_path" => repos_path,
         "gems_path" => gems_path, "gems" => gem_entries }
     end
@@ -62,7 +62,7 @@ module Gemkeeper
     def merge(existing, matched)
       existing_gems = existing["gems"] || []
       new_by_name = matched.to_h do |g|
-        [g[:name], { "name" => g[:name], "repo" => g[:repo], "version" => "from_lockfile" }]
+        [g[:name], { "name" => g[:name], "version" => "from_lockfile" }]
       end
 
       updated = existing_gems.map do |entry|

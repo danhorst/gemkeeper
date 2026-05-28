@@ -85,7 +85,7 @@ class TestConfiguration < Minitest::Test
     end
   end
 
-  def test_gem_definition_requires_repo
+  def test_gem_definition_requires_name_or_repo
     File.write("gemkeeper.yml", <<~YAML)
       gems:
         - version: latest
@@ -94,6 +94,20 @@ class TestConfiguration < Minitest::Test
     assert_raises(Gemkeeper::InvalidConfigError) do
       Gemkeeper::Configuration.load
     end
+  end
+
+  def test_gem_definition_allows_name_without_repo
+    File.write("gemkeeper.yml", <<~YAML)
+      gems:
+        - name: my-gem
+          version: latest
+    YAML
+
+    config = Gemkeeper::Configuration.load
+
+    gem_def = config.gems[0]
+    assert_equal "my-gem", gem_def.name
+    assert_nil gem_def.repo
   end
 
   def test_extracts_gem_name_from_repo_url

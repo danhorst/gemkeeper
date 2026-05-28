@@ -11,12 +11,14 @@ module Gemkeeper
       /fatal: credential/i
     ].freeze
 
-    def initialize(config, uploader)
+    def initialize(config, uploader, manifest:)
       @config = config
       @uploader = uploader
+      @manifest = manifest
     end
 
     def sync(gem_def)
+      repo_url = resolve_repo(gem_def)
       version = resolve_version(gem_def)
       name = gem_def.name
       gems_path = @config.gems_path
@@ -25,13 +27,13 @@ module Gemkeeper
 
       puts "Syncing #{name} @ #{version}..."
       local_path = File.join(@config.repos_path, name)
-      repo = fetch_repo(gem_def.repo, local_path)
+      repo = fetch_repo(repo_url, local_path)
 
       Output.step("Checking out #{version}...")
       repo.checkout_version(version)
 
       if gem_def.latest?
-        version = latest_version!(repo, name, gems_path, gem_def.repo)
+        version = latest_version!(repo, name, gems_path, repo_url)
         return :skipped unless version
       end
 
@@ -40,6 +42,33 @@ module Gemkeeper
     end
 
     private
+
+    # Explicit repo: in gemkeeper.yml wins, but warns on divergence from the manifest.
+    # Otherwise the repo is resolved from the manifest by gem name.
+    def resolve_repo(gem_def)
+      manifest_repo = @manifest.repo_for(gem_def.name)
+      return manifest_repo || missing_repo!(gem_def.name) unless gem_def.repo
+
+      warn_if_divergent(gem_def.name, gem_def.repo, manifest_repo)
+      gem_def.repo
+    end
+
+    def missing_repo!(name)
+      unless File.exist?(@manifest.path)
+        raise InvalidConfigError,
+              "No manifest found at #{@manifest.path} — run 'gemkeeper manifest generate' to create one"
+      end
+
+      raise InvalidConfigError,
+            "No repo configured for #{name.inspect} — add it to the manifest with 'gemkeeper manifest generate'"
+    end
+
+    def warn_if_divergent(name, config_repo, manifest_repo)
+      return unless manifest_repo && manifest_repo != config_repo
+
+      warn "Warning: repo for #{name} in gemkeeper.yml (#{config_repo}) " \
+           "differs from manifest (#{manifest_repo}) — using gemkeeper.yml"
+    end
 
     def resolve_version(gem_def)
       return gem_def.version unless gem_def.from_lockfile?
