@@ -169,11 +169,20 @@ gemkeeper server status
 # Generate gemkeeper.yml from a Gemfile.lock and org manifest
 gemkeeper setup path/to/Gemfile.lock
 
+# Use an existing gemkeeper.yml as input (updates manifest, optionally installs as global config)
+gemkeeper setup path/to/gemkeeper.yml
+
 # Use a custom manifest path
 gemkeeper setup path/to/Gemfile.lock --manifest ~/.config/myorg/manifest.yml
 
+# Write gemkeeper.yml to a specific path
+gemkeeper setup path/to/Gemfile.lock --config path/to/output.yml
+
 # Overwrite existing gemkeeper.yml entirely
 gemkeeper setup path/to/Gemfile.lock --force
+
+# Skip auto-configuring Bundler mirrors
+gemkeeper setup path/to/Gemfile.lock --skip-bundler-config
 
 # Write to the global Homebrew service config instead of the current directory
 gemkeeper setup path/to/Gemfile.lock --global
@@ -182,6 +191,31 @@ gemkeeper setup path/to/Gemfile.lock --global
 `--global` targets the system-wide config used by `brew services` — `/opt/homebrew/etc/gemkeeper.yml` on Apple Silicon or `/usr/local/etc/gemkeeper.yml` on Intel.
 It sets `repos_path` and `gems_path` as absolute paths under the corresponding `var` directory so the daemon finds them regardless of which directory you run commands from.
 `--global` and `--config` are mutually exclusive.
+
+### Manifest Management
+
+The manifest (`~/.config/gemkeeper/manifest.yml`) is the global name→repo lookup table shared across projects.
+`manifest generate` builds or updates it; `setup` reads it.
+
+```bash
+# Build or update the manifest from a Gemfile.lock
+gemkeeper manifest generate path/to/Gemfile.lock
+
+# Use a custom manifest path
+gemkeeper manifest generate path/to/Gemfile.lock --manifest ~/.config/myorg/manifest.yml
+
+# Overwrite the manifest entirely (discard existing entries)
+gemkeeper manifest generate path/to/Gemfile.lock --force
+
+# Validate the default manifest
+gemkeeper manifest validate
+
+# Validate a specific manifest file
+gemkeeper manifest validate path/to/manifest.yml
+
+# Validate and probe each repo via git ls-remote
+gemkeeper manifest validate --resolve
+```
 
 ### Gem Synchronization
 
