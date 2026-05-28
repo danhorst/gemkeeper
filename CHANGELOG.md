@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+### Fixed
+
+- `gemkeeper setup` and `gemkeeper manifest generate` now write an explicit `name:` field for every gem entry in `gemkeeper.yml`.
+  Previously the gem name was always derived from the repo URL at runtime, which breaks when the repo is renamed and no longer matches the gem name.
+- Re-running setup after a repo rename now correctly updates the entry: the existing entry is matched by its explicit `name:` field rather than by the repo URL basename, and the `repo:` URL is updated to the current value from the manifest.
+
 ## [0.6.6] - 2026-05-28
 
 ### Fixed

@@ -95,6 +95,14 @@ class TestConfigGenerator < Minitest::Test
     assert_includes repos, "git@github.com:company/other-internal-gem.git"
   end
 
+  def test_build_includes_explicit_name_field
+    config = generator.build(@output_path, force: false)
+
+    config["gems"].each do |entry|
+      assert entry.key?("name"), "Expected every gem entry to have an explicit 'name' field"
+    end
+  end
+
   def test_merge_updates_version_on_existing_matched_gem
     existing = {
       "gems" => [{ "repo" => "https://github.com/company/internal-gem-one", "version" => "v1.0.0" }]
@@ -105,5 +113,23 @@ class TestConfigGenerator < Minitest::Test
 
     gem_entry = config["gems"].find { |entry| entry["repo"].include?("internal-gem-one") }
     assert_equal "from_lockfile", gem_entry["version"]
+  end
+
+  def test_merge_matches_existing_entry_by_explicit_name_when_repo_was_renamed
+    existing = {
+      "gems" => [{
+        "name" => "internal-gem-one",
+        "repo" => "git@github.com:company/old-repo-name.git",
+        "version" => "v1.0.0"
+      }]
+    }
+    File.write(@output_path, existing.to_yaml)
+
+    config = generator.build(@output_path, force: false)
+
+    gem_entry = config["gems"].find { |entry| entry["name"] == "internal-gem-one" }
+    assert gem_entry, "Expected to find internal-gem-one in merged config"
+    assert_equal "from_lockfile", gem_entry["version"]
+    assert_equal "https://github.com/company/internal-gem-one", gem_entry["repo"]
   end
 end

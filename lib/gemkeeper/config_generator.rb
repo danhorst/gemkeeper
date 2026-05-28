@@ -47,7 +47,7 @@ module Gemkeeper
 
     def build_fresh(matched, global_output_path: nil)
       repos_path, gems_path = data_paths_for(global_output_path)
-      gem_entries = matched.map { |g| { "repo" => g[:repo], "version" => "from_lockfile" } }
+      gem_entries = matched.map { |g| { "name" => g[:name], "repo" => g[:repo], "version" => "from_lockfile" } }
       { "port" => Configuration::DEFAULT_PORT, "repos_path" => repos_path,
         "gems_path" => gems_path, "gems" => gem_entries }
     end
@@ -61,12 +61,14 @@ module Gemkeeper
 
     def merge(existing, matched)
       existing_gems = existing["gems"] || []
-      new_by_name = matched.to_h { |g| [g[:name], { "repo" => g[:repo], "version" => "from_lockfile" }] }
+      new_by_name = matched.to_h do |g|
+        [g[:name], { "name" => g[:name], "repo" => g[:repo], "version" => "from_lockfile" }]
+      end
 
       updated = existing_gems.map do |entry|
-        name = File.basename(entry["repo"].to_s, ".git").sub(/^ruby-/, "")
-        if new_by_name.key?(name)
-          new_by_name.delete(name).merge(entry.except("version")).merge("version" => "from_lockfile")
+        name = entry["name"] || File.basename(entry["repo"].to_s, ".git").sub(/^ruby-/, "")
+        if (new_entry = new_by_name.delete(name))
+          entry.except("version", "repo", "name").merge(new_entry)
         else
           entry
         end
