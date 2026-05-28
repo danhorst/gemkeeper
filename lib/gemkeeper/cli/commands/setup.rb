@@ -53,7 +53,8 @@ module Gemkeeper
           return if options[:skip_bundler_config]
 
           port = config.fetch("port", Configuration::DEFAULT_PORT)
-          BundlerMirrorConfigurator.new(result.candidates, port:, global: options[:global]).configure
+          resolved = result.candidates.select { |c| result.manifest.repo_for(c[:name]) }
+          BundlerMirrorConfigurator.new(resolved, port:, global: options[:global]).configure
         end
 
         def setup_from_config(source_path, output_path, options)

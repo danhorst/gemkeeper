@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Fixed
+
+- `gemkeeper setup` no longer configures a Bundler mirror for a private gem registry when all gems from that source were skipped during manifest resolution.
+
 ## [0.5.0] - 2026-05-27
 
 ### Added
