@@ -1,7 +1,5 @@
 ## [Unreleased]
 
-## [0.6.2] - 2026-05-28
-
 ### Fixed
 
 - `gemkeeper server start --foreground` now works correctly when run as a Homebrew service (via `brew services start`).
