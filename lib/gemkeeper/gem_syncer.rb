@@ -29,12 +29,12 @@ module Gemkeeper
       local_path = File.join(@config.repos_path, name)
       repo = fetch_repo(repo_url, local_path)
 
-      Output.step("Checking out #{version}...")
-      repo.checkout_version(version)
-
       if gem_def.latest?
         version = latest_version!(repo, name, gems_path, repo_url)
         return :skipped unless version
+      else
+        Output.step("Checking out #{version}...")
+        repo.checkout_version(version)
       end
 
       build_and_upload(local_path, gems_path)
@@ -86,7 +86,7 @@ module Gemkeeper
 
     def cached?(name, version, gems_path)
       bare = version.delete_prefix("v")
-      gem_file = File.join(gems_path, "gems", "#{name}-#{bare}.gem")
+      gem_file = File.join(gems_path, "#{name}-#{bare}.gem")
       return false unless File.exist?(gem_file)
 
       Output.skip("Skipping #{name} @ #{bare} (already cached)")

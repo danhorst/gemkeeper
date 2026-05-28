@@ -111,7 +111,7 @@ class TestCLIIntegration < Minitest::Test
 
   def test_sync_skips_already_cached_gem
     with_config("port" => 9999) do |temp_dir, config_path|
-      gems_dir = File.join(temp_dir, "cache", "gems", "gems")
+      gems_dir = File.join(temp_dir, "cache", "gems")
       FileUtils.mkdir_p(gems_dir)
       FileUtils.touch(File.join(gems_dir, "my-gem-1.2.3.gem"))
 

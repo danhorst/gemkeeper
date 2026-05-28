@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+### Fixed
+
+- `sync` now correctly skips gems that are already cached locally.
+  The cache check was looking in `gems_path/gems/name-version.gem` but `gem build` saves to `gems_path/name-version.gem`, so every gem was rebuilt and re-uploaded on every run.
+- `sync` no longer checks out the trunk branch twice for `version: latest` gems.
+  `fetch_repo` already leaves the repo on trunk after clone or pull; the redundant `checkout_version("latest")` call is removed, and the cache check now happens immediately after fetch.
+
 ## [0.7.1] - 2026-05-28
 
 ### Fixed
