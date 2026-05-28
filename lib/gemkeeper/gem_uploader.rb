@@ -26,6 +26,17 @@ module Gemkeeper
       end
 
       handle_response(response, gem_path)
+    rescue Faraday::ConnectionFailed, Faraday::TimeoutError
+      raise ServerNotReachableError,
+            "Geminabox server is not reachable at #{@geminabox_url} — " \
+            "run 'gemkeeper server start' or check 'gemkeeper server status'"
+    end
+
+    def reachable?
+      connection.get("/")
+      true
+    rescue Faraday::ConnectionFailed, Faraday::TimeoutError
+      false
     end
 
     def list_gems

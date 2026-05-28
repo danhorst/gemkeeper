@@ -41,6 +41,9 @@ module Gemkeeper
           failures = []
           gems_to_sync.each do |gem_def|
             counts[syncer.sync(gem_def)] += 1
+          rescue ServerNotReachableError => error
+            warn "Error: #{error.message}"
+            exit 1
           rescue Error => error
             failures << { name: gem_def.name, message: error.message }
           end

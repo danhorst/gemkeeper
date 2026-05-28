@@ -17,6 +17,7 @@ module Gemkeeper
   class GemspecNotFoundError < BuildError; end
 
   class UploadError < Error; end
+  class ServerNotReachableError < UploadError; end
 
   class ServerError < Error; end
   class ServerAlreadyRunningError < ServerError; end

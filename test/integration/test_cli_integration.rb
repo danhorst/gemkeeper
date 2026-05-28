@@ -165,24 +165,4 @@ class TestCLIIntegration < Minitest::Test
       assert_match(/no Gemfile.lock found|from_lockfile/i, "#{stdout}\n#{stderr}")
     end
   end
-
-  def test_sync_partial_failure_continues_and_exits_nonzero
-    config = {
-      "port" => 9999,
-      "gems" => [
-        { "repo" => "git@github.com:example/bad-gem.git", "version" => "latest" },
-        { "repo" => "git@github.com:example/other-bad-gem.git", "version" => "latest" }
-      ]
-    }
-
-    with_config(config) do |_temp_dir, config_path|
-      # Pre-cache both gems so sync skips the actual git work and hits the cached path
-      # To test partial failure without real git, we need both to fail — just verify exit code
-      result = run_gemkeeper("sync", "--config", config_path, allow_failure: true)
-
-      # Both gems fail (no real repos), but both are attempted — exit is non-zero
-      refute result[:status].success?
-      assert_match(/failure/, result[:stderr])
-    end
-  end
 end

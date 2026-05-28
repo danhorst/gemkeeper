@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Fixed
+
+- `gemkeeper sync` now exits immediately with a clear, actionable error message when the Geminabox server is not reachable, instead of failing once per gem with a raw connection error.
+
 ## [0.6.0] - 2026-05-28
 
 ### Added
