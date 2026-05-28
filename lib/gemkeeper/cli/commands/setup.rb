@@ -40,12 +40,8 @@ module Gemkeeper
 
         def setup_from_lockfile(lockfile_path, output_path, options)
           manifest = load_manifest(options)
-          candidates = LockfileParser.internal_sources(lockfile_path)
-
-          unless candidates.empty?
-            GemRepoResolver.new(candidates:, manifest:).resolve!
-            manifest.save(manifest_path(options))
-          end
+          result = ManifestBuilder.build(lockfile_path:, manifest:)
+          manifest.save(manifest_path(options)) if result.any_changes?
 
           lockfile_versions = LockfileParser.parse(lockfile_path)
           global_output_path = options[:global] ? output_path : nil
@@ -54,7 +50,7 @@ module Gemkeeper
 
           File.write(output_path, config.to_yaml)
           puts "Wrote #{output_path}"
-          configure_bundler(candidates, config, options) unless options[:skip_bundler_config]
+          configure_bundler(result.candidates, config, options) unless options[:skip_bundler_config]
         end
 
         def configure_bundler(candidates, config, options)

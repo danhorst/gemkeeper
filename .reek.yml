@@ -36,3 +36,6 @@ detectors:
     - Gemkeeper::CLI::Commands::Server::Start
     - Gemkeeper::CLI::Commands::Server::Stop
     - Gemkeeper::CLI::Commands::Server::Status
+    - Gemkeeper::CLI::Commands::Manifest
+    - Gemkeeper::CLI::Commands::Manifest::Generate
+    - Gemkeeper::CLI::Commands::Manifest::Validate
