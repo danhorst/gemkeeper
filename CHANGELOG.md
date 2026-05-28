@@ -1,7 +1,5 @@
 ## [Unreleased]
 
-## [0.7.1] - 2026-05-28
-
 ### Fixed
 
 - `gemkeeper setup` no longer duplicates entries when an existing `gemkeeper.yml` has `repo:`-only entries (no `name:`) whose URL basename differs from the manifest gem name.
