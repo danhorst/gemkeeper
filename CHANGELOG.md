@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.6.7] - 2026-05-28
+
 ### Fixed
 
 - `gemkeeper setup` and `gemkeeper manifest generate` now write an explicit `name:` field for every gem entry in `gemkeeper.yml`.
@@ -137,7 +139,8 @@
 
 - Initial release
 
-[Unreleased]: https://github.com/danhorst/gemkeeper/compare/v0.6.6...HEAD
+[Unreleased]: https://github.com/danhorst/gemkeeper/compare/v0.6.7...HEAD
+[0.6.7]: https://github.com/danhorst/gemkeeper/compare/0.6.6...0.6.7
 [0.6.6]: https://github.com/danhorst/gemkeeper/compare/0.6.5...0.6.6
 [0.6.5]: https://github.com/danhorst/gemkeeper/compare/0.6.4...0.6.5
 [0.6.4]: https://github.com/danhorst/gemkeeper/compare/0.6.3...0.6.4
