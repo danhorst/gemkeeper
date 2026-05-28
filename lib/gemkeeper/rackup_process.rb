@@ -19,7 +19,9 @@ module Gemkeeper
 
     def start_foreground
       generate_config_ru
-      Dir.chdir(@config.cache_dir) { system(*build_rackup_cmd) }
+      Dir.chdir(@config.cache_dir) do
+        system(*build_rackup_cmd) || raise(ServerError, "rackup exited with status #{$CHILD_STATUS.exitstatus}")
+      end
     end
 
     private

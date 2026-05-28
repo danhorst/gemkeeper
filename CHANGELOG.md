@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+### Fixed
+
+- `gemkeeper server start --foreground` now exits non-zero when rackup fails (e.g., port already in use).
+  Previously a rackup crash returned exit 0, causing launchd to respawn immediately in a tight loop with no visible error.
+  The failure reason is now logged and the process exits 1, giving launchd an accurate status and making the cause diagnosable via `brew services info`.
+
 ## [0.6.3] - 2026-05-28
 
 ### Fixed
