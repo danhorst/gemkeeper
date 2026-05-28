@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+### Fixed
+
+- The Geminabox server now starts correctly on Ruby 3.3+ (including the Homebrew-installed Ruby 4.x).
+  `rubygems/indexer` was extracted from RubyGems in 3.3 into the `rubygems-generate_index` gem;
+  the generated `config.ru` was requiring it directly before geminabox could apply its own fallback.
+  Removed the redundant require and added `rubygems-generate_index` as an explicit dependency.
+
 ## [0.6.2] - 2026-05-28
 
 ### Fixed
