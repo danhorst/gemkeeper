@@ -47,8 +47,16 @@ module Gemkeeper
     end
 
     def build_rackup_cmd(*extra)
-      ["rackup", @config.config_ru_path, "--host", "127.0.0.1",
+      [rackup_bin, @config.config_ru_path, "--host", "127.0.0.1",
        "-p", @config.port.to_s, "-s", "puma", *extra]
+    end
+
+    def rackup_bin
+      gem_home = ENV.fetch("GEM_HOME", nil)
+      return "rackup" unless gem_home
+
+      candidate = File.join(gem_home, "bin", "rackup")
+      File.exist?(candidate) ? candidate : "rackup"
     end
 
     def launch_daemon

@@ -1,5 +1,13 @@
 ## [Unreleased]
 
+## [0.6.2] - 2026-05-28
+
+### Fixed
+
+- `gemkeeper server start --foreground` now works correctly when run as a Homebrew service (via `brew services start`).
+  launchd runs with a minimal PATH that does not include the gem's `bin/` directory, so `rackup` was silently not found and the server exited 0 on every launch attempt.
+  The server now resolves `rackup` from `GEM_HOME/bin` when available, matching the path set by the Homebrew bin wrapper.
+
 ## [0.6.1] - 2026-05-28
 
 ### Fixed
