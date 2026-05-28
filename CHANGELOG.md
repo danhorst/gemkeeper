@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.5.0] - 2026-05-27
+
 ### Added
 
 - `gemkeeper manifest generate LOCKFILE_PATH` builds or updates the gem manifest from a Gemfile.lock.
@@ -65,7 +67,8 @@
 
 - Initial release
 
-[Unreleased]: https://github.com/danhorst/gemkeeper/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/danhorst/gemkeeper/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/danhorst/gemkeeper/compare/0.4.0...0.5.0
 [0.4.0]: https://github.com/danhorst/gemkeeper/compare/0.3.0...0.4.0
 [0.3.0]: https://github.com/danhorst/gemkeeper/compare/0.2.1...0.3.0
 [0.2.1]: https://github.com/danhorst/gemkeeper/compare/0.2.0...0.2.1
