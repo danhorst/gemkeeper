@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.6.3] - 2026-05-28
+
 ### Fixed
 
 - The Geminabox server now starts correctly on Ruby 3.3+ (including the Homebrew-installed Ruby 4.x).
@@ -104,7 +106,8 @@
 
 - Initial release
 
-[Unreleased]: https://github.com/danhorst/gemkeeper/compare/v0.6.2...HEAD
+[Unreleased]: https://github.com/danhorst/gemkeeper/compare/v0.6.3...HEAD
+[0.6.3]: https://github.com/danhorst/gemkeeper/compare/0.6.2...0.6.3
 [0.6.2]: https://github.com/danhorst/gemkeeper/compare/0.6.1...0.6.2
 [0.6.1]: https://github.com/danhorst/gemkeeper/compare/0.6.0...0.6.1
 [0.6.0]: https://github.com/danhorst/gemkeeper/compare/0.5.0...0.6.0
