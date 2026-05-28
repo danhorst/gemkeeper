@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.6.5] - 2026-05-28
+
 ### Fixed
 
 - `gemkeeper server status` now correctly detects a running server even when no PID file exists (e.g., when started via `brew services start`).
@@ -121,7 +123,8 @@
 
 - Initial release
 
-[Unreleased]: https://github.com/danhorst/gemkeeper/compare/v0.6.4...HEAD
+[Unreleased]: https://github.com/danhorst/gemkeeper/compare/v0.6.5...HEAD
+[0.6.5]: https://github.com/danhorst/gemkeeper/compare/0.6.4...0.6.5
 [0.6.4]: https://github.com/danhorst/gemkeeper/compare/0.6.3...0.6.4
 [0.6.3]: https://github.com/danhorst/gemkeeper/compare/0.6.2...0.6.3
 [0.6.2]: https://github.com/danhorst/gemkeeper/compare/0.6.1...0.6.2
