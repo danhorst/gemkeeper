@@ -66,7 +66,7 @@ module Gemkeeper
       end
 
       updated = existing_gems.map do |entry|
-        name = entry["name"] || File.basename(entry["repo"].to_s, ".git").sub(/^ruby-/, "")
+        name = canonical_name(entry)
         if (new_entry = new_by_name.delete(name))
           entry.except("version", "repo", "name").merge(new_entry)
         else
@@ -76,6 +76,14 @@ module Gemkeeper
 
       updated += new_by_name.values
       existing.merge("gems" => updated)
+    end
+
+    def canonical_name(entry)
+      return entry["name"] if entry["name"]
+
+      repo = entry["repo"].to_s
+      manifest_entry = @manifest.gems.find { |g| g[:repo] == repo }
+      manifest_entry&.fetch(:name) || File.basename(repo, ".git").sub(/^ruby-/, "")
     end
   end
 end

@@ -123,6 +123,32 @@ class TestConfigGenerator < Minitest::Test
     assert_equal "from_lockfile", gem_entry["version"]
   end
 
+  def test_merge_resolves_repo_only_entry_when_url_basename_differs_from_manifest_name
+    manifest_content = <<~YAML
+      gems:
+        - name: internal-gem-one
+          repo: https://github.com/company/different-basename
+        - name: internal-gem-two
+          repo: https://github.com/company/internal-gem-two
+    YAML
+    manifest_path = File.join(@tmpdir, "manifest.yml")
+    File.write(manifest_path, manifest_content)
+    manifest = Gemkeeper::ManifestReader.load(manifest_path)
+    gen = Gemkeeper::ConfigGenerator.new(manifest:, lockfile_versions: @lockfile_versions)
+
+    existing = {
+      "gems" => [{ "repo" => "https://github.com/company/different-basename", "version" => "v1.0.0" }]
+    }
+    File.write(@output_path, existing.to_yaml)
+
+    config = gen.build(@output_path, force: false)
+
+    matches = config["gems"].select { |e| e["name"] == "internal-gem-one" }
+    assert_equal 1, matches.length, "Expected one entry for internal-gem-one, not a duplicate"
+    assert_equal "from_lockfile", matches.first["version"]
+    refute matches.first.key?("repo"), "Matched entry should be promoted to manifest-only (no repo)"
+  end
+
   def test_merge_strips_repo_from_matched_entry
     existing = {
       "gems" => [{

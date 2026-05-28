@@ -1,5 +1,12 @@
 ## [Unreleased]
 
+## [0.7.1] - 2026-05-28
+
+### Fixed
+
+- `gemkeeper setup` no longer duplicates entries when an existing `gemkeeper.yml` has `repo:`-only entries (no `name:`) whose URL basename differs from the manifest gem name.
+  The merge now resolves those entries by repo URL against the manifest to find the canonical name, then replaces the old entry in place rather than keeping it and appending a new one.
+
 ## [0.7.0] - 2026-05-28
 
 ### Changed
