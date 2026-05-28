@@ -63,13 +63,13 @@ class TestServerManager < Minitest::Test
   end
 
   def test_start_server_command_binds_to_localhost
-    manager = Gemkeeper::ServerManager.new(@config)
-    assert_localhost_binding(manager.send(:build_start_cmd))
+    process = Gemkeeper::RackupProcess.new(@config)
+    assert_localhost_binding(process.send(:build_rackup_cmd, "-D", "-P", @config.pid_file))
   end
 
   def test_start_server_foreground_command_binds_to_localhost
-    manager = Gemkeeper::ServerManager.new(@config)
-    assert_localhost_binding(manager.send(:build_foreground_cmd))
+    process = Gemkeeper::RackupProcess.new(@config)
+    assert_localhost_binding(process.send(:build_rackup_cmd))
   end
 
   private

@@ -1,8 +1,5 @@
 # frozen_string_literal: true
 
-require "yaml"
-require "fileutils"
-
 module Gemkeeper
   # Decouples manifest format from sync/setup commands that need the eligible gem list.
   class ManifestReader
@@ -18,7 +15,7 @@ module Gemkeeper
       @path = path
       @gems = []
       @source_url = nil
-      parse_manifest if File.exist?(@path)
+      load_from_disk if File.exist?(@path)
     end
 
     def clear!
@@ -52,21 +49,15 @@ module Gemkeeper
     end
 
     def save(path = @path)
-      FileUtils.mkdir_p(File.dirname(path))
-      data = {}
-      data["source_url"] = @source_url if @source_url
-      data["gems"] = @gems.map { |g| { "name" => g[:name], "repo" => g[:repo] } }
-      File.write(path, data.to_yaml)
+      ManifestSerializer.save(path, gems: @gems, source_url: @source_url)
     end
 
     private
 
-    def parse_manifest
-      data = YAML.safe_load_file(@path, permitted_classes: [], symbolize_names: true) || {}
+    def load_from_disk
+      data = ManifestSerializer.load(@path)
       @source_url = data[:source_url]&.to_s
-      @gems = (data[:gems] || []).map do |entry|
-        { name: entry[:name].to_s, repo: entry[:repo].to_s }
-      end
+      @gems = (data[:gems] || []).map { |entry| { name: entry[:name].to_s, repo: entry[:repo].to_s } }
     end
 
     def conflict_message(name, existing_repo, new_repo)

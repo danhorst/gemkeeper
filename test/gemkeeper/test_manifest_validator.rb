@@ -171,5 +171,4 @@ class TestManifestValidator < Minitest::Test
     assert_match(/Invalid YAML/, errors.first)
     assert_empty @output.string
   end
-
 end

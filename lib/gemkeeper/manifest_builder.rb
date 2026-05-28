@@ -15,24 +15,20 @@ module Gemkeeper
     end
 
     def self.build(lockfile_path:, manifest:, input: $stdin, output: $stdout)
-      new(lockfile_path:, manifest:, input:, output:).build!
+      new(lockfile_path:, manifest:).build!(input:, output:)
     end
 
-    def initialize(lockfile_path:, manifest:, input: $stdin, output: $stdout)
+    def initialize(lockfile_path:, manifest:)
       @lockfile_path = lockfile_path
       @manifest = manifest
-      @input = input
-      @output = output
     end
 
-    def build!
+    def build!(input: $stdin, output: $stdout)
       candidates = LockfileParser.internal_sources(@lockfile_path)
       already_mapped_count = candidates.count { |c| @manifest.repo_for(c[:name]) }
       before_size = @manifest.gems.size
 
-      unless candidates.empty?
-        GemRepoResolver.new(candidates:, manifest: @manifest, input: @input, output: @output).resolve!
-      end
+      GemRepoResolver.new(candidates:, manifest: @manifest, input:, output:).resolve! unless candidates.empty?
 
       added_count = @manifest.gems.size - before_size
       skipped_count = candidates.size - already_mapped_count - added_count
