@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.7.0] - 2026-05-28
+
 ### Changed
 
 - `gemkeeper setup` and `gemkeeper manifest generate` no longer write `repo:` into generated `gemkeeper.yml` entries.
@@ -152,7 +154,8 @@
 
 - Initial release
 
-[Unreleased]: https://github.com/danhorst/gemkeeper/compare/v0.6.7...HEAD
+[Unreleased]: https://github.com/danhorst/gemkeeper/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/danhorst/gemkeeper/compare/0.6.7...0.7.0
 [0.6.7]: https://github.com/danhorst/gemkeeper/compare/0.6.6...0.6.7
 [0.6.6]: https://github.com/danhorst/gemkeeper/compare/0.6.5...0.6.6
 [0.6.5]: https://github.com/danhorst/gemkeeper/compare/0.6.4...0.6.5
