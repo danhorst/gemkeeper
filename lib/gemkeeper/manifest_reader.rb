@@ -21,6 +21,12 @@ module Gemkeeper
       parse_manifest if File.exist?(@path)
     end
 
+    def clear!
+      @gems = []
+      @source_url = nil
+      self
+    end
+
     def gem_names
       @gems.map { |gem_entry| gem_entry[:name] }
     end

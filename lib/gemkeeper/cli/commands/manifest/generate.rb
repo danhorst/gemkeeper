@@ -11,10 +11,13 @@ module Gemkeeper
                                    desc: "Path to the project's Gemfile.lock"
           option :manifest, type: :string,
                             desc: "Path to write manifest (default: ~/.config/gemkeeper/manifest.yml)"
+          option :force, type: :boolean, default: false,
+                         desc: "Overwrite existing manifest entirely"
 
           def call(lockfile_path:, **options)
             path = manifest_path(options)
             manifest = ManifestReader.load(path)
+            manifest.clear! if options[:force]
             result = ManifestBuilder.build(lockfile_path:, manifest:)
 
             if result.empty?
