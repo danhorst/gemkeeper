@@ -21,7 +21,7 @@ module Gemkeeper
 
             if errors.empty?
               entry_count = entry_count(manifest_path)
-              puts "#{manifest_path}: valid (#{entry_count} #{"entry".then { |w| entry_count == 1 ? w : "#{w}s" }})"
+              puts "#{manifest_path}: valid (#{entry_count} #{entry_count == 1 ? "entry" : "entries"})"
             else
               warn "#{manifest_path}: #{errors.size} #{"error".then { |w| errors.size == 1 ? w : "#{w}s" }}"
               errors.each { |e| warn "  #{e}" }
@@ -32,10 +32,7 @@ module Gemkeeper
           private
 
           def entry_count(path)
-            return 0 unless File.exist?(path)
-
-            data = YAML.safe_load_file(path, permitted_classes: [], symbolize_names: false) || {}
-            (data["gems"] || []).size
+            ManifestReader.load(path).gems.size
           end
         end
       end

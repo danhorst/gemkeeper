@@ -34,7 +34,7 @@ module Gemkeeper
     end
 
     def load_yaml
-      YAML.safe_load_file(@path, permitted_classes: [], symbolize_names: false) || {}
+      @data = YAML.safe_load_file(@path, permitted_classes: [], symbolize_names: false) || {}
     rescue Psych::SyntaxError => e
       "Invalid YAML: #{e.message}"
     end
@@ -48,8 +48,10 @@ module Gemkeeper
     end
 
     def entry_errors(data)
+      return [] unless data["gems"].is_a?(Array)
+
       seen = Set.new
-      (data["gems"] || []).each_with_index.flat_map { |entry, i| single_entry_errors(entry, i, seen) }
+      data["gems"].each_with_index.flat_map { |entry, i| single_entry_errors(entry, i, seen) }
     end
 
     def single_entry_errors(entry, index, seen)
@@ -80,8 +82,7 @@ module Gemkeeper
     end
 
     def resolve_errors(output)
-      data = YAML.safe_load_file(@path, permitted_classes: [], symbolize_names: false) || {}
-      (data["gems"] || []).flat_map { |entry| probe_repo(entry["name"], entry["repo"], output) }
+      (@data["gems"] || []).flat_map { |entry| probe_repo(entry["name"], entry["repo"], output) }
     end
 
     def probe_repo(name, repo, output)
