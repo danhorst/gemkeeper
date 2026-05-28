@@ -5,16 +5,19 @@ module Gemkeeper
     module Commands
       module Manifest
         class Generate < Dry::CLI::Command
+          include CLI::LockfileResolution
+
           desc "Build or update the gem manifest from a Gemfile.lock"
 
-          argument :lockfile_path, type: :string, required: true,
-                                   desc: "Path to the project's Gemfile.lock"
+          argument :lockfile_path, type: :string, required: false,
+                                   desc: "Gemfile.lock, Gemfile, or directory (default: nearest Gemfile.lock)"
           option :manifest, type: :string,
                             desc: "Path to write manifest (default: ~/.config/gemkeeper/manifest.yml)"
           option :force, type: :boolean, default: false,
                          desc: "Overwrite existing manifest entirely"
 
-          def call(lockfile_path:, **options)
+          def call(lockfile_path: nil, **options)
+            lockfile_path = resolve_source_path(lockfile_path)
             path = manifest_path(options)
             manifest = ManifestReader.load(path)
             manifest.clear! if options[:force]

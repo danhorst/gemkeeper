@@ -5,11 +5,14 @@
 - `gemkeeper setup` now accepts a directory path and finds `Gemfile.lock` inside it.
 - `gemkeeper setup` now accepts a `Gemfile` path and uses the sibling `Gemfile.lock`.
 - `gemkeeper setup` now works with no arguments by finding the nearest `Gemfile.lock` (walks up from the current directory).
+- `gemkeeper manifest generate` now accepts a directory, `Gemfile` path, or no arguments (same resolution as `setup`).
 
 ### Fixed
 
 - `gemkeeper setup` no longer configures a Bundler mirror for a private gem registry when all gems from that source were skipped during manifest resolution.
-- `gemkeeper setup` now reports a clear error when the resolved source path does not exist.
+- `gemkeeper setup` and `gemkeeper manifest generate` now report a clear error when the resolved source path does not exist.
+- All commands that accept `--config` now report a clear error when the specified config file does not exist, instead of silently using defaults.
+- `gemkeeper server stop` now exits 0 when the server is already stopped; stopping an already-stopped server is not an error.
 
 ## [0.5.0] - 2026-05-27
 

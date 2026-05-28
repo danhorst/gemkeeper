@@ -56,6 +56,7 @@ module Gemkeeper
     end
 
     def initialize(config_path = nil)
+      @explicit_config = !config_path.nil?
       @config_path = config_path || find_config_file
       @config = load_config
       apply_config
@@ -91,7 +92,13 @@ module Gemkeeper
     end
 
     def load_config
-      return {} unless @config_path && File.exist?(@config_path)
+      return {} unless @config_path
+
+      unless File.exist?(@config_path)
+        raise ConfigFileNotFoundError, "config file not found — #{@config_path}" if @explicit_config
+
+        return {}
+      end
 
       begin
         YAML.safe_load_file(@config_path, permitted_classes: [], symbolize_names: true) || {}

@@ -138,6 +138,69 @@ class TestManifestIntegration < Minitest::Test
     assert_match(/manifest\.yml/, result[:stdout])
   end
 
+  def test_generate_with_no_args_finds_nearest_lockfile
+    Dir.mktmpdir do |tmpdir|
+      FileUtils.cp(FIXTURE_LOCKFILE, File.join(tmpdir, "Gemfile.lock"))
+      manifest_path = File.join(tmpdir, "manifest.yml")
+
+      result = run_gemkeeper(
+        "manifest", "generate",
+        "--manifest", manifest_path,
+        chdir: tmpdir
+      )
+
+      assert result[:status].success?, result[:stderr]
+      assert File.exist?(manifest_path)
+    end
+  end
+
+  def test_generate_with_directory_finds_lockfile_inside
+    Dir.mktmpdir do |tmpdir|
+      FileUtils.cp(FIXTURE_LOCKFILE, File.join(tmpdir, "Gemfile.lock"))
+      manifest_path = File.join(tmpdir, "manifest.yml")
+
+      result = run_gemkeeper("manifest", "generate", tmpdir, "--manifest", manifest_path)
+
+      assert result[:status].success?, result[:stderr]
+      assert File.exist?(manifest_path)
+    end
+  end
+
+  def test_generate_with_gemfile_path_uses_sibling_lockfile
+    Dir.mktmpdir do |tmpdir|
+      FileUtils.cp(FIXTURE_LOCKFILE, File.join(tmpdir, "Gemfile.lock"))
+      File.write(File.join(tmpdir, "Gemfile"), "# stub")
+      manifest_path = File.join(tmpdir, "manifest.yml")
+
+      result = run_gemkeeper(
+        "manifest", "generate", File.join(tmpdir, "Gemfile"),
+        "--manifest", manifest_path
+      )
+
+      assert result[:status].success?, result[:stderr]
+      assert File.exist?(manifest_path)
+    end
+  end
+
+  def test_generate_with_missing_path_gives_clear_error
+    result = run_gemkeeper(
+      "manifest", "generate", "/nonexistent/Gemfile.lock",
+      allow_failure: true
+    )
+
+    refute result[:status].success?
+    assert_match(/file not found/i, result[:stderr])
+  end
+
+  def test_generate_with_no_args_and_no_lockfile_gives_clear_error
+    Dir.mktmpdir do |tmpdir|
+      result = run_gemkeeper("manifest", "generate", allow_failure: true, chdir: tmpdir)
+
+      refute result[:status].success?
+      assert_match(/no Gemfile\.lock found/i, result[:stderr])
+    end
+  end
+
   def test_generate_command_appears_in_help
     result = run_gemkeeper("manifest", "generate", "--help")
 

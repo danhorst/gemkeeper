@@ -36,8 +36,8 @@ class TestBundlerMirrorConfigurator < Minitest::Test
     captured = StringIO.new
     configure_with_stub(resolved, port: 9292, global: false, output: captured)
 
-    assert_match(%r{rubygems\.pkg\.github\.com}, captured.string)
-    refute_match(%r{gems\.example\.com}, captured.string)
+    assert_match(/rubygems\.pkg\.github\.com/, captured.string)
+    refute_match(/gems\.example\.com/, captured.string)
   ensure
     FileUtils.rm_rf(tmpdir)
   end

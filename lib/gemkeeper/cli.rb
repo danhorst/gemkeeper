@@ -12,6 +12,7 @@ module Gemkeeper
   end
 end
 
+require_relative "cli/lockfile_resolution"
 require_relative "cli/commands/version"
 require_relative "cli/commands/setup"
 require_relative "cli/commands/sync"

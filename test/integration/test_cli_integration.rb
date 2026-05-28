@@ -85,13 +85,20 @@ class TestCLIIntegration < Minitest::Test
     end
   end
 
-  def test_server_stop_when_not_running
+  def test_server_stop_when_not_running_exits_zero
     with_config("port" => 19_999) do |_temp_dir, config_path|
-      result = run_gemkeeper("server", "stop", "--config", config_path, allow_failure: true)
+      result = run_gemkeeper("server", "stop", "--config", config_path)
 
-      assert_match(/not running/, result[:stderr])
-      refute result[:status].success?
+      assert result[:status].success?
+      assert_match(/not running/, result[:stdout])
     end
+  end
+
+  def test_explicit_config_path_not_found_gives_clear_error
+    result = run_gemkeeper("sync", "--config", "/nonexistent/gemkeeper.yml", allow_failure: true)
+
+    refute result[:status].success?
+    assert_match(/config file not found/i, result[:stderr])
   end
 
   def test_server_start_help_shows_foreground_option
