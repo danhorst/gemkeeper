@@ -72,7 +72,7 @@ jobs:
 
       - name: Configure RubyGems credentials
         if: steps.check_gem.outputs.already_published != 'true'
-        uses: rubygems/configure-rubygems-credentials@v1
+        uses: rubygems/configure-rubygems-credentials@v1.0.0
 
       - name: Build and push gem
         if: steps.check_gem.outputs.already_published != 'true'
