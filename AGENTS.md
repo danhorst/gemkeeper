@@ -60,6 +60,15 @@ gems:
 - `gemkeeper sync` - Build and upload all configured gems
 - `gemkeeper sync <gem-name>` - Sync specific gem
 - `gemkeeper list` - Show locally uploaded gems
+- `gemkeeper manifest generate LOCKFILE_PATH` - Build or update the gem manifest from a Gemfile.lock (`--force` overwrites, `--manifest` overrides path)
+- `gemkeeper manifest validate [PATH]` - Validate manifest structure; `--resolve` probes each repo via `git ls-remote`
+
+### Manifest vs gemkeeper.yml
+
+The manifest (`~/.config/gemkeeper/manifest.yml` by default) is a global name→repo lookup table shared across projects.
+It maps gem names to their source repo URLs and is built/updated by `setup` (from a Gemfile.lock) or `manifest generate`.
+`gemkeeper.yml` is per-project: it lists gems with versions and points at the manifest for repo resolution.
+`setup --force` overwrites gemkeeper.yml but never clears the manifest — the manifest accumulates mappings across projects by design.
 
 ## Release
 

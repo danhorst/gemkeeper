@@ -1,5 +1,17 @@
 ## [Unreleased]
 
+## [0.5.0] - 2026-05-27
+
+### Added
+
+- `gemkeeper manifest generate LOCKFILE_PATH` builds or updates the gem manifest from a Gemfile.lock.
+  Merges with any existing manifest by default; `--force` overwrites it entirely.
+  Accepts `--manifest` to specify a non-default path.
+- `gemkeeper manifest validate [PATH]` checks a manifest file for structural errors: missing fields, invalid repo URLs, duplicate names, and malformed `source_url`.
+  `--resolve` additionally probes each repo with `git ls-remote` (5s timeout per entry) to verify reachability.
+- During interactive `gemkeeper setup`, gems with inaccessible source repos can now be skipped.
+  Enter nothing when no URL can be inferred, or type `skip` at any prompt.
+
 ## [0.4.0] - 2026-05-27
 
 ### Added
