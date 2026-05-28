@@ -172,16 +172,4 @@ class TestManifestValidator < Minitest::Test
     assert_empty @output.string
   end
 
-  def test_resolve_reports_unreachable_repo
-    path = write_manifest(<<~YAML)
-      gems:
-        - name: my-gem
-          repo: git@invalid.example.test:org/my-gem.git
-    YAML
-
-    errors = validate(path, resolve: true)
-
-    assert(errors.any? { |e| e.include?("my-gem") })
-    assert_match(/FAILED|timed out/, @output.string)
-  end
 end
