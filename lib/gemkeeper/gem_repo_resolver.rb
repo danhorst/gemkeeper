@@ -5,6 +5,8 @@ module Gemkeeper
   # GIT-sourced gems are added automatically; private gem registry entries
   # are inferred where possible (GitHub Packages) or prompted interactively.
   class GemRepoResolver
+    SKIP_INPUT = "skip"
+
     def initialize(candidates:, manifest:, input: $stdin, output: $stdout)
       @candidates = candidates
       @manifest = manifest
@@ -14,37 +16,36 @@ module Gemkeeper
 
     def resolve!
       unresolvable = []
-
-      @candidates.each do |candidate|
-        name = candidate[:name]
-        next if @manifest.repo_for(name)
-
-        if candidate[:source_type] == :git
-          @manifest.add_mapping(name:, repo: candidate[:repo])
-        else
-          repo = resolve_private_gem(candidate)
-          if repo
-            @manifest.add_mapping(name:, repo:)
-          else
-            unresolvable << candidate
-          end
-        end
-      end
-
+      @candidates.each { |candidate| resolve_candidate(candidate, unresolvable) }
       raise_unresolvable(unresolvable) if unresolvable.any?
       @manifest
     end
 
     private
 
-    def resolve_private_gem(candidate)
-      inferred = infer_repo(candidate)
+    def resolve_candidate(candidate, unresolvable)
+      return if @manifest.repo_for(candidate[:name])
+      return @manifest.add_mapping(name: candidate[:name], repo: candidate[:repo]) if candidate[:source_type] == :git
 
-      if interactive?
-        prompt(candidate, inferred)
-      elsif inferred
-        warn "Note: auto-inferred repo for #{candidate[:name]}: #{inferred}"
-        inferred
+      interactive? ? resolve_interactively(candidate) : resolve_non_interactively(candidate, unresolvable)
+    end
+
+    def resolve_interactively(candidate)
+      repo = prompt(candidate, infer_repo(candidate))
+      if repo
+        @manifest.add_mapping(name: candidate[:name], repo:)
+      else
+        @output.puts "  Skipping #{candidate[:name]}"
+      end
+    end
+
+    def resolve_non_interactively(candidate, unresolvable)
+      repo = infer_repo(candidate)
+      if repo
+        warn "Note: auto-inferred repo for #{candidate[:name]}: #{repo}"
+        @manifest.add_mapping(name: candidate[:name], repo:)
+      else
+        unresolvable << candidate
       end
     end
 
@@ -57,12 +58,18 @@ module Gemkeeper
 
     def prompt(candidate, inferred)
       @output.print "\n  #{candidate[:name]} (from #{candidate[:remote]})"
-      @output.print "\n  Repo URL"
-      @output.print " [#{inferred}]" if inferred
-      @output.print ": "
-      input = @input.gets&.strip
-      input = inferred if input.nil? || input.empty?
-      input
+      @output.print "\n  Repo URL#{prompt_hint(inferred)}: "
+      parse_prompt_input(@input.gets&.strip, inferred)
+    end
+
+    def prompt_hint(inferred)
+      inferred ? " [#{inferred}] (or \"#{SKIP_INPUT}\" to skip)" : " (blank to skip)"
+    end
+
+    def parse_prompt_input(input, inferred)
+      return nil if input.nil? || input == SKIP_INPUT || (input.empty? && inferred.nil?)
+
+      input.empty? ? inferred : input
     end
 
     def interactive?
