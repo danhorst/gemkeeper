@@ -1,5 +1,7 @@
 ## [Unreleased]
 
+## [0.6.6] - 2026-05-28
+
 ### Fixed
 
 - Gem uploads and server request handling now work correctly on Ruby 4.0 / RubyGems 4.0.
@@ -129,7 +131,8 @@
 
 - Initial release
 
-[Unreleased]: https://github.com/danhorst/gemkeeper/compare/v0.6.5...HEAD
+[Unreleased]: https://github.com/danhorst/gemkeeper/compare/v0.6.6...HEAD
+[0.6.6]: https://github.com/danhorst/gemkeeper/compare/0.6.5...0.6.6
 [0.6.5]: https://github.com/danhorst/gemkeeper/compare/0.6.4...0.6.5
 [0.6.4]: https://github.com/danhorst/gemkeeper/compare/0.6.3...0.6.4
 [0.6.3]: https://github.com/danhorst/gemkeeper/compare/0.6.2...0.6.3
