@@ -50,7 +50,8 @@ Gem::Specification.new do |spec|
   spec.add_dependency "dry-cli", "~> 1.0"
   spec.add_dependency "faraday", "~> 2.0"
   spec.add_dependency "faraday-multipart", "~> 1.0"
-  spec.add_dependency "geminabox", "~> 2.0"
+  spec.add_dependency "geminabox", "~> 3.0"
   spec.add_dependency "puma", "~> 7.0"
+  spec.add_dependency "rackup", "~> 2.0"
   spec.add_dependency "rubygems-generate_index", "~> 1.0"
 end

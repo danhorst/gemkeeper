@@ -1,5 +1,11 @@
 ## [Unreleased]
 
+### Fixed
+
+- Gem uploads and server request handling now work correctly on Ruby 4.0 / RubyGems 4.0.
+  rack 2.x is incompatible with Ruby 4.0; upgraded to geminabox 3.0 which pulls in sinatra 4 and rack 3.
+  Added `rackup` as an explicit dependency — rack 3.x extracted the `rackup` executable into its own gem.
+
 ## [0.6.5] - 2026-05-28
 
 ### Fixed
