@@ -1,6 +1,6 @@
 ![Gemkeeper](./img/gemkeeper.jpeg)
 
-This project is an opinionated wrapper around [Gem in a Box][1] for managing private gem dependencies in an offline development environment.
+This project manages private gem dependencies in an offline development environment, building internal gems from source and serving them through a local compact index server.
 
 ## Installation
 
@@ -17,14 +17,14 @@ brew tap danhorst/tap
 brew install danhorst/tap/gemkeeper
 ```
 
-Forumla: [`danhorst/homebrew-tap`][2]
+Forumla: [`danhorst/homebrew-tap`][1]
 
 ## Workstation Setup
 
 If you cannot reach your organization's private gem server, follow these steps to use gemkeeper as a local proxy.
 
 **Prerequisites:** You must have HTTPS access to the internal gem repositories on GitHub.
-Configure GitHub credentials before step 4 — see [GitHub authentication docs][3].
+Configure GitHub credentials before step 4 — see [GitHub authentication docs][2].
 
 1. Install gemkeeper:
 
@@ -65,12 +65,12 @@ bundle config set --local mirror.<your-private-gem-source-url> http://localhost:
 ```
 
 Replace `<your-private-gem-source-url>` with the gem source URL declared in your `Gemfile` (the one that requires VPN or private credentials).
-The mirror approach redirects gem resolution to your local Geminabox without modifying the committed `Gemfile` or `Gemfile.lock`.
+The mirror approach redirects gem resolution to your local Gemkeeper server without modifying the committed `Gemfile` or `Gemfile.lock`.
 Public gems are proxied from RubyGems.org automatically.
 
 ## Quick Start
 
-1. Ensure your org manifest is present at `~/.config/gemkeeper/manifest.yml` (see [Workstation Setup](#workstation-setup)), then create a project `gemkeeper.yml`:
+1. Ensure your org manifest is present at `~/.config/gemkeeper/manifest.yml` (see [Workstation Setup][3]), then create a project `gemkeeper.yml`:
 
 ```yaml
 port: 9292
@@ -115,7 +115,7 @@ Gemkeeper looks for configuration files in these locations (in order):
 ### Configuration Options
 
 ```yaml
-# Port for the Geminabox server (default: 9292)
+# Port for the Gemkeeper server (default: 9292)
 port: 9292
 
 # Where to clone gem repositories (default: ./cache/repos)
@@ -293,8 +293,8 @@ gemkeeper server stop
 
 1. **Clone/Pull**: Gemkeeper clones (or pulls) gem repositories to a local cache.
 2. **Build**: Builds `.gem` files from the source at the specified version/tag.
-3. **Upload**: Uploads built gems to a local Geminabox server.
-4. **Proxy**: Geminabox proxies public gems from RubyGems.org, so you only need one gem source.
+3. **Upload**: Uploads built gems to the local Gemkeeper server.
+4. **Proxy**: The server proxies public gems from RubyGems.org, so you only need one gem source.
 
 This lets you use a combination of public and private gems from a single gem source.
 
@@ -306,6 +306,6 @@ bundle exec rake test    # Run tests
 bundle exec rubocop      # Run linter
 ```
 
-[1]: https://github.com/geminabox/geminabox
-[2]: https://github.com/danhorst/homebrew-tap
-[3]: https://docs.github.com/en/authentication
+[1]: https://github.com/danhorst/homebrew-tap
+[2]: https://docs.github.com/en/authentication
+[3]: #workstation-setup
