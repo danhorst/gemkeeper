@@ -27,9 +27,20 @@ module Gemkeeper
 
       handle_response(response, gem_path)
     rescue Faraday::ConnectionFailed, Faraday::TimeoutError
-      raise ServerNotReachableError,
-            "Gemkeeper server is not reachable at #{@server_url} — " \
-            "run 'gemkeeper server start' or check 'gemkeeper server status'"
+      not_reachable!
+    end
+
+    # True when the running server's private store already serves name@version.
+    # Hits the private-store endpoint, never /info, so a public gem can't fool it.
+    def serves?(name, version)
+      status = connection.get("/gemkeeper/has/#{name}/#{version}").status
+      case status
+      when 200 then true
+      when 404 then false
+      else raise ServerError, "Unexpected status #{status} checking #{name} #{version} on #{@server_url}"
+      end
+    rescue Faraday::ConnectionFailed, Faraday::TimeoutError
+      not_reachable!
     end
 
     def reachable?
@@ -44,6 +55,12 @@ module Gemkeeper
     end
 
     private
+
+    def not_reachable!
+      raise ServerNotReachableError,
+            "Gemkeeper server is not reachable at #{@server_url} — " \
+            "run 'gemkeeper server start' or check 'gemkeeper server status'"
+    end
 
     def connection
       @connection ||= Faraday.new(url: @server_url) do |f|

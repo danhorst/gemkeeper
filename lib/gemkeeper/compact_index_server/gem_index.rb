@@ -23,6 +23,12 @@ module Gemkeeper
       def keys       = @gems.keys
       def values     = @gems.values
 
+      # True when the private store holds this exact name and bare-semver version.
+      def serves?(name, version)
+        gem = @gems[name]
+        gem ? gem.versions.any? { |gem_version| gem_version.number == version } : false
+      end
+
       def gem_path(filename)
         path = File.join(@gems_dir, filename)
         File.exist?(path) ? path : nil

@@ -105,6 +105,34 @@ class TestCompactIndexServer < Minitest::Test
     assert_equal 200, status
   end
 
+  # ── Private-store presence endpoint ───────────────────────────────────────
+
+  def test_presence_endpoint_200_when_version_present
+    post_upload(build_test_gem("private-gem", "2.0.0"))
+
+    status, = get("/gemkeeper/has/private-gem/2.0.0")
+    assert_equal 200, status
+  end
+
+  def test_presence_endpoint_404_when_version_absent
+    post_upload(build_test_gem("private-gem", "2.0.0"))
+
+    status, = get("/gemkeeper/has/private-gem/9.9.9")
+    assert_equal 404, status
+  end
+
+  def test_presence_endpoint_404_for_never_uploaded_gem_without_upstream_probe
+    # The endpoint reads the private index only; a missing private gem returns
+    # 404 immediately rather than proxying upstream (which would 503 offline).
+    status, = get("/gemkeeper/has/never-uploaded/1.0.0")
+    assert_equal 404, status
+  end
+
+  def test_presence_endpoint_rejects_invalid_name
+    status, = get("/gemkeeper/has/bad~name/1.0.0")
+    assert_equal 400, status
+  end
+
   # ── ETag / 304 ────────────────────────────────────────────────────────────
 
   def test_info_returns_304_when_etag_matches

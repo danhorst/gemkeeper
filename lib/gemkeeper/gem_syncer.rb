@@ -1,73 +1,45 @@
 # frozen_string_literal: true
 
-module Gemkeeper
-  # Syncs a single gem: resolves version, checks cache, clones/pulls, builds, uploads.
-  class GemSyncer
-    AUTH_ERROR_PATTERNS = [
-      /authentication failed/i,
-      /could not read from remote repository/i,
-      /permission denied \(publickey\)/i,
-      /repository not found/i,
-      /fatal: credential/i
-    ].freeze
+require "rubygems/package"
 
+module Gemkeeper
+  # Syncs a single gem: checks the server, reuses a built artifact, or builds
+  # from source, then uploads. Repo acquisition is delegated to RepoFetcher.
+  class GemSyncer
     def initialize(config, uploader, manifest:)
-      @config = config
+      @config   = config
       @uploader = uploader
-      @manifest = manifest
+      @fetcher  = RepoFetcher.new(manifest, config.repos_path)
     end
 
     def sync(gem_def)
-      repo_url = resolve_repo(gem_def)
-      version = resolve_version(gem_def)
-      name = gem_def.name
-      gems_path = @config.gems_path
-
-      return :skipped if !gem_def.latest? && cached?(name, version, gems_path)
-
-      puts "Syncing #{name} @ #{version}..."
-      local_path = File.join(@config.repos_path, name)
-      repo = fetch_repo(repo_url, local_path)
-
-      if gem_def.latest?
-        version = latest_version!(repo, name, gems_path, repo_url)
-        return :skipped unless version
-      else
-        Output.step("Checking out #{version}...")
-        repo.checkout_version(version)
-      end
-
-      build_and_upload(local_path, gems_path)
-      :synced
+      gem_def.latest? ? sync_latest(gem_def) : sync_pinned(gem_def)
     end
 
     private
 
-    # Explicit repo: in gemkeeper.yml wins, but warns on divergence from the manifest.
-    # Otherwise the repo is resolved from the manifest by gem name.
-    def resolve_repo(gem_def)
-      manifest_repo = @manifest.repo_for(gem_def.name)
-      return manifest_repo || missing_repo!(gem_def.name) unless gem_def.repo
+    # Pinned / from_lockfile: version is known without the repo, so check the
+    # server first, then reuse a local artifact, and only build as a last resort.
+    def sync_pinned(gem_def)
+      name    = gem_def.name
+      version = resolve_version(gem_def)
+      return skip(name, version) if @uploader.serves?(name, version)
 
-      warn_if_divergent(gem_def.name, gem_def.repo, manifest_repo)
-      gem_def.repo
+      artifact = File.join(@config.gems_path, "#{name}-#{version}.gem")
+      return reupload(artifact, name, version) if reusable_artifact?(artifact, name, version)
+
+      build_and_upload(gem_def, version)
     end
 
-    def missing_repo!(name)
-      unless File.exist?(@manifest.path)
-        raise InvalidConfigError,
-              "No manifest found at #{@manifest.path} — run 'gemkeeper manifest generate' to create one"
-      end
+    # latest: the version is only known after checkout, so the repo is always
+    # fetched; the server check then decides whether the resolved version uploads.
+    def sync_latest(gem_def)
+      repo, local_path = @fetcher.fetch(gem_def)
+      version = repo.current_version or
+        raise BuildError, "Could not read version from gemspec for #{gem_def.name}"
+      return skip(gem_def.name, version) if @uploader.serves?(gem_def.name, version)
 
-      raise InvalidConfigError,
-            "No repo configured for #{name.inspect} — add it to the manifest with 'gemkeeper manifest generate'"
-    end
-
-    def warn_if_divergent(name, config_repo, manifest_repo)
-      return unless manifest_repo && manifest_repo != config_repo
-
-      warn "Warning: repo for #{name} in gemkeeper.yml (#{config_repo}) " \
-           "differs from manifest (#{manifest_repo}) — using gemkeeper.yml"
+      build_gem(local_path)
     end
 
     def resolve_version(gem_def)
@@ -84,49 +56,46 @@ module Gemkeeper
       versions[gem_def.name] or raise GitError, "#{gem_def.name} not found in #{lockfile_path}"
     end
 
-    def cached?(name, version, gems_path)
-      bare = version.delete_prefix("v")
-      gem_file = File.join(gems_path, "#{name}-#{bare}.gem")
-      return false unless File.exist?(gem_file)
-
-      Output.skip("Skipping #{name} @ #{bare} (already cached)")
-      true
+    def build_and_upload(gem_def, version)
+      repo, local_path = @fetcher.fetch(gem_def)
+      Output.step("Checking out #{version}...")
+      repo.checkout_version(version)
+      build_gem(local_path)
     end
 
-    def fetch_repo(repo_url, local_path)
-      repo = GitRepository.new(repo_url, local_path)
-      Output.step("Fetching from #{repo_url}...")
-      repo.clone_or_pull
-      repo
-    rescue GitError => git_error
-      raise auth_error?(git_error) ? auth_failure_error(repo_url, git_error) : git_error
-    end
-
-    def latest_version!(repo, name, gems_path, repo_url)
-      version = repo.current_version or
-        raise BuildError, "Could not read version from gemspec in #{repo_url}"
-      cached?(name, version, gems_path) ? nil : version
-    end
-
-    def build_and_upload(local_path, gems_path)
+    def build_gem(local_path)
       Output.step("Building gem...")
-      gem_path = GemBuilder.new(local_path, gems_path).build
-      Output.step("Uploading...")
-      result = @uploader.upload(gem_path)
+      gem_path = GemBuilder.new(local_path, @config.gems_path).build
+      upload(gem_path)
+      :synced
+    end
+
+    # Reuse a previously built artifact only if its embedded spec matches the
+    # requested gem — never upload the wrong file because a name collided.
+    def reusable_artifact?(path, name, version)
+      return false unless File.exist?(path)
+
+      spec = Gem::Package.new(path).spec
+      spec.name == name && spec.version.to_s == version
+    rescue StandardError
+      false
+    end
+
+    def reupload(path, name, version)
+      Output.step("Uploading cached #{name} @ #{version} (no rebuild)...")
+      upload(path)
+      :synced
+    end
+
+    def upload(path)
+      result = @uploader.upload(path)
       Output.step(result[:message])
       Output.success("  Done!")
     end
 
-    def auth_error?(error)
-      AUTH_ERROR_PATTERNS.any? { |pat| error.message.match?(pat) }
-    end
-
-    def auth_failure_error(repo_url, original_error)
-      GitError.new(
-        "Git authentication failed for #{repo_url}.\n" \
-        "#{original_error.message}\n" \
-        "Configure GitHub credentials: https://docs.github.com/en/authentication"
-      )
+    def skip(name, version)
+      Output.skip("Skipping #{name} @ #{version} (already on server)")
+      :skipped
     end
   end
 end

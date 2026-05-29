@@ -11,6 +11,8 @@
 
 - `gemkeeper server start` no longer fails with a `LoadError` when run from source.
   The spawned `rackup` process does not inherit the executable's `$LOAD_PATH`, so it could not require `gemkeeper/compact_index_server`; the rackup command now passes the gem's `lib/` via `-I`.
+- `gemkeeper sync` now repopulates a fresh or repointed server instead of skipping every gem.
+  The skip decision was based on a local build artifact, which could diverge from the server's store; it now asks the server's private store directly (new read-only `GET /gemkeeper/has/<name>/<version>` endpoint) and re-uploads an existing artifact without rebuilding when the server is missing it.
 
 ## [0.7.2] - 2026-05-28
 

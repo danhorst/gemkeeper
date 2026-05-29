@@ -19,6 +19,9 @@ module Gemkeeper
       info: %r{\A/info/([^/]+)\z},
       gem: %r{\A/gems/([^/]+\.gem)\z}
     }.freeze
+    # Private-store presence check for `gemkeeper sync`; reads the index only,
+    # never the upstream proxy (unlike /info), so it can't be fooled by a public gem.
+    PRESENCE_ROUTE = %r{\A/gemkeeper/has/([^/]+)/([^/]+)\z}
 
     def initialize(gems_path:, cache_dir:)
       @index  = GemIndex.new(File.join(gems_path, "gems"))
@@ -34,6 +37,7 @@ module Gemkeeper
       in ["GET", "/names"]    then serve_names(req)
       in ["GET", "/versions"] then serve_versions(req)
       in ["POST", "/upload"]  then @upload.call(req)
+      in ["GET", String => p] if p.start_with?("/gemkeeper/") then serve_presence(p)
       in ["GET", _]           then serve_resource(path, req)
       else not_found
       end
@@ -42,6 +46,16 @@ module Gemkeeper
     private
 
     # ── Routing ──────────────────────────────────────────────────────────────
+
+    def serve_presence(path)
+      match = path.match(PRESENCE_ROUTE)
+      return not_found unless match
+
+      name, version = match.captures
+      return invalid_name unless VALID_NAME.match?(name) && VALID_NAME.match?(version)
+
+      @index.serves?(name, version) ? present : not_found
+    end
 
     def serve_resource(path, req)
       type, name = match_resource(path)
@@ -104,6 +118,7 @@ module Gemkeeper
     end
 
     def health       = [200, { "content-type" => "text/plain" }, ["OK"]]
+    def present      = [200, { "content-type" => "text/plain" }, ["present"]]
     def not_found    = [404, { "content-type" => "text/plain" }, ["Not Found"]]
     def invalid_name = [400, { "content-type" => "text/plain" }, ["Invalid name"]]
 

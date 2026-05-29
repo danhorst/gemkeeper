@@ -39,4 +39,14 @@ class TestGemUploader < Minitest::Test
     uploader = Gemkeeper::GemUploader.new(CLOSED_PORT_URL)
     refute uploader.reachable?
   end
+
+  def test_serves_raises_server_not_reachable_on_connection_failure
+    uploader = Gemkeeper::GemUploader.new(CLOSED_PORT_URL)
+
+    error = assert_raises(Gemkeeper::ServerNotReachableError) do
+      uploader.serves?("mimir", "1.0.5")
+    end
+
+    assert_match(/gemkeeper server start/, error.message)
+  end
 end

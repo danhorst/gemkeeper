@@ -109,12 +109,8 @@ class TestCLIIntegration < Minitest::Test
     assert_match(/don't daemonize/, result[:stdout])
   end
 
-  def test_sync_skips_already_cached_gem
+  def test_sync_errors_when_server_unreachable
     with_config("port" => 9999) do |temp_dir, config_path|
-      gems_dir = File.join(temp_dir, "cache", "gems")
-      FileUtils.mkdir_p(gems_dir)
-      FileUtils.touch(File.join(gems_dir, "my-gem-1.2.3.gem"))
-
       config = {
         "port" => 9999,
         "gems_path" => File.join(temp_dir, "cache", "gems"),
@@ -122,12 +118,14 @@ class TestCLIIntegration < Minitest::Test
       }
       File.write(config_path, config.to_yaml)
 
-      # Isolate HOME so sync's manifest lookup can't read the developer's real ~/.config/gemkeeper/manifest.yml
-      result = run_gemkeeper("sync", "--config", config_path, env: { "HOME" => temp_dir })
+      # The skip decision is now server-authoritative, so with no server running
+      # sync reports the actionable not-reachable error rather than a stale skip.
+      # Isolate HOME so sync's manifest lookup can't read the developer's real manifest.
+      result = run_gemkeeper("sync", "--config", config_path, allow_failure: true, env: { "HOME" => temp_dir })
 
-      assert_match(/already cached/, result[:stdout])
-      assert_match(/Sync complete:/, result[:stdout])
-      assert_match(/1 skipped/, result[:stdout])
+      refute result[:status].success?
+      assert_match(/not reachable/, result[:stderr])
+      assert_match(/gemkeeper server start/, result[:stderr])
     end
   end
 

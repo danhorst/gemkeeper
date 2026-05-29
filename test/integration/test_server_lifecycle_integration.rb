@@ -2,6 +2,7 @@
 
 require "integration_helper"
 require "net/http"
+require "rubygems/package"
 
 class TestServerLifecycleIntegration < Minitest::Test
   include IntegrationHelper
@@ -106,7 +107,64 @@ class TestServerLifecycleIntegration < Minitest::Test
     assert_match(/not running/, result[:stdout])
   end
 
+  # Regression: a gem built locally but absent from a freshly started server must
+  # be re-uploaded by `sync` (not skipped on a stale local-cache check) and then
+  # served. This is the original 404 bug. (spec FR-1.1, FR-1.3, FR-2.1)
+  def test_sync_repopulates_empty_server_from_existing_artifact
+    build_test_gem("reg-gem", "1.0.0", @config.gems_path)
+    File.write(@config_path, {
+      "port" => @port,
+      "gems_path" => @config.gems_path,
+      "repos_path" => File.join(@temp_dir, "repos"),
+      "gems" => [{ "name" => "reg-gem", "version" => "1.0.0" }]
+    }.to_yaml)
+
+    @manager.start
+    uploader = Gemkeeper::GemUploader.new(@config.server_url)
+    refute uploader.serves?("reg-gem", "1.0.0"), "fresh server should not yet serve the gem"
+
+    run_gemkeeper("sync", "reg-gem", "--config", @config_path)
+
+    assert uploader.serves?("reg-gem", "1.0.0"), "sync should have re-uploaded the gem"
+    assert_equal 200, gem_file_status("reg-gem-1.0.0.gem"), "server should serve the re-uploaded gem"
+  end
+
+  def test_sync_skips_when_server_already_serves
+    build_test_gem("skip-gem", "1.0.0", @config.gems_path)
+    File.write(@config_path, {
+      "port" => @port,
+      "gems_path" => @config.gems_path,
+      "repos_path" => File.join(@temp_dir, "repos"),
+      "gems" => [{ "name" => "skip-gem", "version" => "1.0.0" }]
+    }.to_yaml)
+    @manager.start
+
+    run_gemkeeper("sync", "skip-gem", "--config", @config_path)          # first run uploads
+    result = run_gemkeeper("sync", "skip-gem", "--config", @config_path) # second run skips
+
+    assert_match(/1 skipped/, result[:stdout])
+  end
+
   private
+
+  def gem_file_status(filename)
+    Net::HTTP.get_response(URI("#{@config.server_url}/gems/#{filename}")).code.to_i
+  end
+
+  def build_test_gem(name, version, dest_dir)
+    spec = Gem::Specification.new do |s|
+      s.name     = name
+      s.version  = version
+      s.summary  = "Test gem"
+      s.authors  = ["Test"]
+      s.files    = []
+    end
+    FileUtils.mkdir_p(dest_dir)
+    Dir.mktmpdir do |build_dir|
+      Dir.chdir(build_dir) { Gem::Package.build(spec) }
+      FileUtils.mv(File.join(build_dir, "#{name}-#{version}.gem"), File.join(dest_dir, "#{name}-#{version}.gem"))
+    end
+  end
 
   def stop_server_if_running
     @manager.stop if @manager.running?
