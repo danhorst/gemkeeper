@@ -1,5 +1,13 @@
 ## [Unreleased]
 
+## [0.8.1] - 2026-05-29
+
+### Changed
+
+- Updated gemspec description to reflect the current compact index server architecture; removes the stale "Gem in a Box" reference.
+- Declared `rack` as an explicit gemspec dependency; it was previously relied on transitively via `rackup`.
+- Removed stale dev dependencies (`builder`, `irb`, `ostruct`) from the Gemfile.
+
 ## [0.8.0] - 2026-05-29
 
 ### Changed
@@ -186,7 +194,8 @@
 
 - Initial release
 
-[Unreleased]: https://github.com/danhorst/gemkeeper/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/danhorst/gemkeeper/compare/v0.8.1...HEAD
+[0.8.1]: https://github.com/danhorst/gemkeeper/compare/0.8.0...0.8.1
 [0.8.0]: https://github.com/danhorst/gemkeeper/compare/0.7.2...0.8.0
 [0.7.2]: https://github.com/danhorst/gemkeeper/compare/0.7.1...0.7.2
 [0.7.1]: https://github.com/danhorst/gemkeeper/compare/0.7.0...0.7.1
