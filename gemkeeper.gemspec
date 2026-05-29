@@ -9,8 +9,7 @@ Gem::Specification.new do |spec|
   spec.email = ["dan.brubaker.horst@gmail.com"]
 
   spec.summary = "Manage offline development with private gem dependencies"
-  spec.description = "An opinionated wrapper around Gem in a Box to manage private " \
-                     "gems in a development environment."
+  spec.description = "A utility for building and hosting private gems locally and proxying to RubyGems for the rest."
   spec.homepage = "https://github.com/danhorst/gemkeeper"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.1.0"
@@ -52,5 +51,6 @@ Gem::Specification.new do |spec|
   spec.add_dependency "faraday", "~> 2.0"
   spec.add_dependency "faraday-multipart", "~> 1.0"
   spec.add_dependency "puma", "~> 7.0"
+  spec.add_dependency "rack", "~> 3.0"
   spec.add_dependency "rackup", "~> 2.0"
 end
