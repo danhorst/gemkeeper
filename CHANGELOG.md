@@ -5,6 +5,11 @@
 - Refactored `CompactIndexServer` into focused collaborators — `RubygemsClient`, `IndexMerger`, `GemCache`, `ResponseBuilder`, `UploadHandler`, `SpecMapper`, plus `Response` and `CacheMeta` value objects.
   No behavior change; this splits the responsibilities that the initial single-file server bundled together and restores the rubycritic score above the 90 gate.
 
+### Fixed
+
+- `gemkeeper server start` no longer fails with a `LoadError` when run from source.
+  The spawned `rackup` process does not inherit the executable's `$LOAD_PATH`, so it could not require `gemkeeper/compact_index_server`; the rackup command now passes the gem's `lib/` via `-I`.
+
 ## [0.7.2] - 2026-05-28
 
 ### Fixed

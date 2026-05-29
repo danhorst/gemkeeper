@@ -49,9 +49,13 @@ module Gemkeeper
     end
 
     def build_rackup_cmd(*extra)
-      [rackup_bin, @config.config_ru_path, "--host", "127.0.0.1",
+      [rackup_bin, "-I", lib_dir, @config.config_ru_path, "--host", "127.0.0.1",
        "-p", @config.port.to_s, "-s", "puma", *extra]
     end
+
+    # The gem's own lib/, so the spawned rackup process can require gemkeeper
+    # even when running from source (it does not inherit the exe's $LOAD_PATH).
+    def lib_dir = File.expand_path("..", __dir__)
 
     def rackup_bin
       gem_home = ENV.fetch("GEM_HOME", nil)
