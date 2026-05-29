@@ -5,6 +5,8 @@ require "digest"
 require "fileutils"
 require "rubygems/package"
 
+require_relative "spec_mapper"
+
 module Gemkeeper
   class CompactIndexServer
     # Builds and maintains the in-memory index of privately-hosted gems.
@@ -14,7 +16,7 @@ module Gemkeeper
         @gems_dir = gems_dir
         @gems     = {}
         FileUtils.mkdir_p(@gems_dir)
-        rebuild!
+        rebuild
       end
 
       def [](name)   = @gems[name]
@@ -28,62 +30,42 @@ module Gemkeeper
 
       # Copies source_path into gems_dir, derives the filename from spec, and rebuilds.
       # Raises Errno::EEXIST if the gem already exists. Returns the target filename.
-      def add!(source_path, spec)
-        filename = gem_filename(spec)
+      def add(source_path, spec)
+        filename = SpecMapper.filename(spec)
         target   = File.join(@gems_dir, filename)
         raise Errno::EEXIST, target if File.exist?(target)
 
-        tmp = "#{target}.tmp.#{Process.pid}.#{Thread.current.object_id}"
-        FileUtils.cp(source_path, tmp)
-        File.rename(tmp, target)
-        rebuild!
+        copy_into_place(source_path, target)
+        rebuild
         filename
       end
 
-      def rebuild!
+      def rebuild
         gems = {}
-        Dir.glob(File.join(@gems_dir, "*.gem")).each do |gem_file|
-          spec = Gem::Package.new(gem_file).spec
-          name = spec.name
-          (gems[name] ||= CompactIndex::Gem.new(name, [])).versions << gem_version_for(spec, gem_file)
-        rescue StandardError => error
-          warn "gemkeeper: skipping #{File.basename(gem_file)}: #{error.message}"
-        end
-
-        gems.each_value do |gem|
-          versions = gem.versions
-          versions.last.info_checksum = Digest::MD5.hexdigest(CompactIndex.info(versions))
-        end
-
+        Dir.glob(File.join(@gems_dir, "*.gem")).each { |gem_file| index_gem(gems, gem_file) }
+        gems.each_value { |gem| stamp_checksum(gem) }
         @gems = gems
       end
 
       private
 
-      def gem_filename(spec)
-        name     = spec.name
-        version  = spec.version
-        platform = spec.platform.to_s
-        if platform.empty? || platform == "ruby"
-          "#{name}-#{version}.gem"
-        else
-          "#{name}-#{version}-#{platform}.gem"
-        end
+      def index_gem(gems, gem_file)
+        spec = Gem::Package.new(gem_file).spec
+        name = spec.name
+        (gems[name] ||= CompactIndex::Gem.new(name, [])).versions << SpecMapper.gem_version(spec, gem_file)
+      rescue StandardError => error
+        warn "gemkeeper: skipping #{File.basename(gem_file)}: #{error.message}"
       end
 
-      def gem_version_for(spec, gem_file)
-        deps = (spec.runtime_dependencies || []).map do |dep|
-          CompactIndex::Dependency.new(dep.name, dep.requirement.to_s)
-        end
-        CompactIndex::GemVersion.new(
-          spec.version.to_s,
-          spec.platform.to_s,
-          Digest::SHA256.file(gem_file).hexdigest,
-          nil,
-          deps,
-          spec.required_ruby_version&.to_s,
-          spec.required_rubygems_version&.to_s
-        )
+      def stamp_checksum(gem)
+        versions = gem.versions
+        versions.last.info_checksum = Digest::MD5.hexdigest(CompactIndex.info(versions))
+      end
+
+      def copy_into_place(source_path, target)
+        tmp = "#{target}.tmp.#{Process.pid}.#{Thread.current.object_id}"
+        FileUtils.cp(source_path, tmp)
+        File.rename(tmp, target)
       end
     end
   end

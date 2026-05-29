@@ -1,5 +1,10 @@
 ## [Unreleased]
 
+### Changed
+
+- Refactored `CompactIndexServer` into focused collaborators — `RubygemsClient`, `IndexMerger`, `GemCache`, `ResponseBuilder`, `UploadHandler`, `SpecMapper`, plus `Response` and `CacheMeta` value objects.
+  No behavior change; this splits the responsibilities that the initial single-file server bundled together and restores the rubycritic score above the 90 gate.
+
 ## [0.7.2] - 2026-05-28
 
 ### Fixed

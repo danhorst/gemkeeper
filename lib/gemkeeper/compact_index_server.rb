@@ -3,11 +3,11 @@
 require "compact_index"
 require "digest"
 require "rack"
-require "rubygems/package"
-require "zlib"
 
 require_relative "compact_index_server/cache_store"
 require_relative "compact_index_server/gem_index"
+require_relative "compact_index_server/response_builder"
+require_relative "compact_index_server/upload_handler"
 require_relative "compact_index_server/upstream_cache"
 
 module Gemkeeper
@@ -15,18 +15,26 @@ module Gemkeeper
   # Delegates private gem state to GemIndex and upstream caching to UpstreamCache.
   class CompactIndexServer
     VALID_NAME = /\A[a-zA-Z0-9._-]+\z/
+    RESOURCE_ROUTES = {
+      info: %r{\A/info/([^/]+)\z},
+      gem: %r{\A/gems/([^/]+\.gem)\z}
+    }.freeze
 
     def initialize(gems_path:, cache_dir:)
-      @index = GemIndex.new(File.join(gems_path, "gems"))
-      @cache = UpstreamCache.new(cache_dir)
+      @index  = GemIndex.new(File.join(gems_path, "gems"))
+      @cache  = UpstreamCache.new(cache_dir)
+      @upload = UploadHandler.new(@index)
     end
 
     def call(env)
       req  = Rack::Request.new(env)
       path = req.path_info
-      case req.request_method
-      when "GET"  then dispatch_get(path, req)
-      when "POST" then dispatch_post(path, req)
+      case [req.request_method, path]
+      in ["GET", "/"]         then health
+      in ["GET", "/names"]    then serve_names(req)
+      in ["GET", "/versions"] then serve_versions(req)
+      in ["POST", "/upload"]  then @upload.call(req)
+      in ["GET", _]           then serve_resource(path, req)
       else not_found
       end
     end
@@ -35,35 +43,20 @@ module Gemkeeper
 
     # ── Routing ──────────────────────────────────────────────────────────────
 
-    def dispatch_get(path, req)
-      case path
-      when "/"         then health
-      when "/names"    then serve_names(req)
-      when "/versions" then serve_versions(req)
-      else dispatch_get_parameterized(path, req)
-      end
+    def serve_resource(path, req)
+      type, name = match_resource(path)
+      return not_found unless type
+      return invalid_name unless VALID_NAME.match?(name)
+
+      type == :info ? serve_info(name, req) : serve_gem_file(name)
     end
 
-    def dispatch_post(path, req)
-      return handle_upload(req) if path == "/upload"
-
-      not_found
-    end
-
-    def dispatch_get_parameterized(path, req)
-      if (match = path.match(%r{\A/info/([^/]+)\z}))
-        gemname = match[1]
-        return invalid_name unless VALID_NAME.match?(gemname)
-
-        serve_info(gemname, req)
-      elsif (match = path.match(%r{\A/gems/([^/]+\.gem)\z}))
-        filename = match[1]
-        return invalid_name unless VALID_NAME.match?(filename)
-
-        serve_gem_file(filename)
-      else
-        not_found
+    def match_resource(path)
+      RESOURCE_ROUTES.each do |type, pattern|
+        match = path.match(pattern)
+        return [type, match[1]] if match
       end
+      nil
     end
 
     # ── Serving ───────────────────────────────────────────────────────────────
@@ -79,84 +72,35 @@ module Gemkeeper
     end
 
     def serve_info(gemname, req)
-      if (gem = @index[gemname])
-        body = CompactIndex.info(gem.versions)
-        serve_body(body, Digest::SHA256.hexdigest(body), req)
-      else
-        result = @cache.info(gemname)
-        result ? serve_body(result[:body], result[:etag], req) : not_found
-      end
+      gem = @index[gemname]
+      gem ? serve_private_info(gem, req) : serve_upstream_info(gemname, req)
     rescue UpstreamUnavailableError
       upstream_unavailable
+    end
+
+    def serve_private_info(gem, req)
+      body = CompactIndex.info(gem.versions)
+      ResponseBuilder.new(req).index(body, Digest::SHA256.hexdigest(body))
+    end
+
+    def serve_upstream_info(gemname, req)
+      result = @cache.info(gemname)
+      result ? ResponseBuilder.new(req).index(result[:body], result[:etag]) : not_found
     end
 
     def serve_gem_file(filename)
       path = @index.gem_path(filename) || @cache.gem_binary(filename)
-      path ? send_file(path) : not_found
+      path ? ResponseBuilder.file(path) : not_found
     rescue UpstreamUnavailableError
       upstream_unavailable
     end
 
-    # ── Upload ────────────────────────────────────────────────────────────────
-
-    def handle_upload(req)
-      upload = req.params["file"]
-      return [400, { "content-type" => "text/plain" }, ["Missing file parameter"]] unless upload
-
-      tempfile_path = upload[:tempfile].path
-      spec          = Gem::Package.new(tempfile_path).spec
-      filename      = @index.add!(tempfile_path, spec)
-      [201, { "content-type" => "text/plain" }, ["Uploaded #{filename}"]]
-    rescue Errno::EEXIST
-      [409, { "content-type" => "text/plain" }, ["Gem already exists"]]
-    rescue Gem::Exception, Gem::Package::FormatError, Zlib::Error, TypeError, ArgumentError => error
-      [422, { "content-type" => "text/plain" }, ["Invalid gem: #{error.message}"]]
-    end
-
     # ── HTTP response helpers ─────────────────────────────────────────────────
 
-    def serve_index_file(path, etag, req)
-      return upstream_unavailable unless path && File.exist?(path)
+    def serve_index_file(file_path, etag, req)
+      return upstream_unavailable unless file_path && File.exist?(file_path)
 
-      serve_body(File.binread(path), etag, req)
-    end
-
-    def serve_body(body, etag, req)
-      quoted = %("#{etag}")
-      return [304, { "etag" => quoted }, []] if req.env["HTTP_IF_NONE_MATCH"] == quoted
-
-      apply_range(body, etag, req) || [200, index_headers(etag, body), [body]]
-    end
-
-    def apply_range(body, etag, req)
-      range_header = req.env["HTTP_RANGE"]
-      return nil unless range_header
-
-      size  = body.bytesize
-      match = range_header.match(/\Abytes=(\d+)-(\d*)\z/)
-      return [416, { "content-range" => "bytes */#{size}" }, []] unless match
-
-      start_byte = match[1].to_i
-      return [416, { "content-range" => "bytes */#{size}" }, []] if start_byte >= size
-
-      raw_end  = match[2]
-      end_byte = raw_end.empty? ? size - 1 : [raw_end.to_i, size - 1].min
-      partial  = body.byteslice(start_byte, end_byte - start_byte + 1)
-      [206, index_headers(etag, body).merge("content-range" => "bytes #{start_byte}-#{end_byte}/#{size}"), [partial]]
-    end
-
-    def index_headers(etag, body)
-      { "content-type" => "text/plain",
-        "etag" => %("#{etag}"),
-        "repr-digest" => "sha-256=:#{Digest::SHA256.base64digest(body)}:",
-        "accept-ranges" => "bytes" }
-    end
-
-    def send_file(path)
-      [200,
-       { "content-type" => "application/octet-stream",
-         "content-length" => File.size(path).to_s },
-       File.open(path, "rb")]
+      ResponseBuilder.new(req).index(File.binread(file_path), etag)
     end
 
     def health       = [200, { "content-type" => "text/plain" }, ["OK"]]

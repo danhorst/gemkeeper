@@ -4,6 +4,8 @@ require "digest"
 require "fileutils"
 require "yaml"
 
+require_relative "cache_meta"
+
 module Gemkeeper
   class CompactIndexServer
     # Handles on-disk cache I/O: atomic writes, sidecar metadata, TTL checks.
@@ -32,22 +34,14 @@ module Gemkeeper
         full_path = File.join(@base_dir, "#{filename}.meta")
         return nil unless File.exist?(full_path)
 
-        YAML.safe_load_file(full_path)
+        CacheMeta.load(YAML.safe_load_file(full_path))
       rescue StandardError
         nil
       end
 
       def write_meta(filename, etag:)
-        full_path = File.join(@base_dir, "#{filename}.meta")
-        atomic_write(full_path, { "etag" => etag, "fetched_at" => Time.now.utc.iso8601 }.to_yaml)
-      end
-
-      def ttl_expired?(meta, ttl)
-        return true unless meta&.key?("fetched_at")
-
-        Time.now - Time.parse(meta["fetched_at"].to_s) > ttl
-      rescue ArgumentError
-        true
+        meta = CacheMeta.new(etag, Time.now.utc.iso8601)
+        atomic_write(File.join(@base_dir, "#{filename}.meta"), meta.to_h.to_yaml)
       end
 
       def atomic_write(full_path, content)
