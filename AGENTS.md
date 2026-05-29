@@ -4,7 +4,7 @@ A Ruby CLI tool for managing offline development with private gem dependencies.
 
 ## Purpose
 
-Automate building internal gems from source and caching them in a local Geminabox server for offline Rails development when disconnected from VPN.
+Automate building internal gems from source and serving them via a local compact index server for offline Rails development when disconnected from VPN.
 
 ## Architecture
 
@@ -12,8 +12,8 @@ Automate building internal gems from source and caching them in a local Geminabo
 - YAML config for gem repository definitions
 - Git operations to clone/pull internal repos
 - Build gems at specified versions/tags
-- Upload to local Geminabox server
-- Geminabox proxies public gems from RubyGems.org
+- Upload to `Gemkeeper::CompactIndexServer` (lib/gemkeeper/compact_index_server.rb)
+- Server implements the Bundler compact index protocol; serves private gems locally and proxies public gems from RubyGems.org with a local disk cache for offline use
 
 ### Version resolution
 

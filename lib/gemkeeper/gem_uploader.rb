@@ -40,16 +40,7 @@ module Gemkeeper
     end
 
     def list_gems
-      response = connection.get("/api/v1/gems.json")
-
-      body = response.body
-      raise UploadError, "Failed to list gems: #{response.status} #{body}" unless response.success?
-
-      JSON.parse(body)
-    rescue JSON::ParserError => parse_error
-      raise UploadError, "Invalid JSON response: #{parse_error.message}"
-    rescue Faraday::Error => connection_error
-      raise UploadError, "Connection error: #{connection_error.message}"
+      raise NotImplementedError, "list_gems is not supported by CompactIndexServer; use gemkeeper list instead"
     end
 
     private

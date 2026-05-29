@@ -9,7 +9,6 @@ gem "builder"
 gem "irb"
 gem "ostruct"
 gem "rake", "~> 13.0"
-gem "rubygems-generate_index"
 
 gem "minitest", "~> 5.16"
 

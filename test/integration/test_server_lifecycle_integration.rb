@@ -77,8 +77,8 @@ class TestServerLifecycleIntegration < Minitest::Test
     assert File.exist?(@config.config_ru_path), "config.ru should be generated"
 
     content = File.read(@config.config_ru_path)
-    assert_match(/Geminabox\.data/, content)
-    assert_match(/Geminabox\.rubygems_proxy\s*=\s*true/, content)
+    assert_match(/CompactIndexServer/, content)
+    assert_match(/gems_path:/, content)
   end
 
   def test_server_creates_gems_directory
