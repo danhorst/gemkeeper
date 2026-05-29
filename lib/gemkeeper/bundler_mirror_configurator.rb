@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Gemkeeper
-  # Configures Bundler mirror settings so private gem registries proxy through local Geminabox.
+  # Configures Bundler mirror settings so private gem registries proxy through the local Gemkeeper server.
   class BundlerMirrorConfigurator
     def initialize(candidates, port:, global:)
       @remotes = candidates.filter_map { |c| c[:remote] if c[:source_type] == :private_gem }.uniq

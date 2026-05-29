@@ -62,7 +62,7 @@ module Gemkeeper
       apply_config
     end
 
-    def geminabox_url
+    def server_url
       "http://localhost:#{port}"
     end
 

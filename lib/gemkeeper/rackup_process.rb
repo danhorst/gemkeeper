@@ -71,7 +71,7 @@ module Gemkeeper
     end
 
     def wait_for_server
-      ServerReadinessProbe.new(@config.geminabox_url).wait
+      ServerReadinessProbe.new(@config.server_url).wait
     end
   end
 end

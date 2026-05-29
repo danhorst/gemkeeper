@@ -41,7 +41,7 @@ module Gemkeeper
 
     def status
       if running?
-        { running: true, pid: read_pid, url: config.geminabox_url }
+        { running: true, pid: read_pid, url: config.server_url }
       else
         { running: false }
       end

@@ -4,7 +4,7 @@ module Gemkeeper
   module CLI
     module Commands
       class List < Dry::CLI::Command
-        desc "List gems cached in Geminabox"
+        desc "List gems cached locally"
 
         option :config, type: :string, desc: "Path to config file"
 
@@ -15,7 +15,7 @@ module Gemkeeper
           gem_files = Dir.glob(File.join(gems_path, "gems", "*.gem"))
 
           if gem_files.empty?
-            puts "No gems cached in Geminabox"
+            puts "No gems cached locally"
             puts "  Gems directory: #{gems_path}"
             return
           end

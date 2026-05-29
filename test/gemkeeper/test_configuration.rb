@@ -20,7 +20,7 @@ class TestConfiguration < Minitest::Test
     config = Gemkeeper::Configuration.load
 
     assert_equal 9292, config.port
-    assert_equal "http://localhost:9292", config.geminabox_url
+    assert_equal "http://localhost:9292", config.server_url
     assert config.repos_path.end_with?("cache/repos")
     assert config.gems_path.end_with?("cache/gems")
     assert_empty config.gems

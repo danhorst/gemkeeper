@@ -12,7 +12,7 @@ module Gemkeeper
         def call(gem_name: nil, **options)
           config = Configuration.load(options[:config])
           gems_to_sync = select_gems(config, gem_name)
-          syncer = GemSyncer.new(config, GemUploader.new(config.geminabox_url), manifest: ManifestReader.load)
+          syncer = GemSyncer.new(config, GemUploader.new(config.server_url), manifest: ManifestReader.load)
           counts, failures = run_sync(gems_to_sync, syncer)
           report_results(counts, failures, gems_to_sync.size)
         end

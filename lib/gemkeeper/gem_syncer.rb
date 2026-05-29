@@ -111,7 +111,7 @@ module Gemkeeper
     def build_and_upload(local_path, gems_path)
       Output.step("Building gem...")
       gem_path = GemBuilder.new(local_path, gems_path).build
-      Output.step("Uploading to Geminabox...")
+      Output.step("Uploading...")
       result = @uploader.upload(gem_path)
       Output.step(result[:message])
       Output.success("  Done!")

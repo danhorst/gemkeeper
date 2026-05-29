@@ -5,7 +5,7 @@ module Gemkeeper
     module Commands
       module Server
         class Status < Dry::CLI::Command
-          desc "Check Geminabox server status"
+          desc "Check Gemkeeper server status"
 
           option :config, type: :string, desc: "Path to config file"
 
@@ -15,11 +15,11 @@ module Gemkeeper
             status = manager.status
 
             if status[:running]
-              puts "Geminabox server is running"
+              puts "Gemkeeper server is running"
               puts "  PID: #{status[:pid]}" if status[:pid]
               puts "  URL: #{status[:url]}"
             else
-              puts "Geminabox server is not running"
+              puts "Gemkeeper server is not running"
             end
           end
         end

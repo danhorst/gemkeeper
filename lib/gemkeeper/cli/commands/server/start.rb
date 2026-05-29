@@ -5,7 +5,7 @@ module Gemkeeper
     module Commands
       module Server
         class Start < Dry::CLI::Command
-          desc "Start the Geminabox server"
+          desc "Start the Gemkeeper server"
 
           option :port, type: :integer, desc: "Port to run server on"
           option :config, type: :string, desc: "Path to config file"
@@ -18,15 +18,15 @@ module Gemkeeper
             config = override_port(config, port) if port
 
             manager = ServerManager.new(config)
-            url = config.geminabox_url
+            url = config.server_url
 
             if options[:foreground]
-              puts "Starting Geminabox server at #{url}"
+              puts "Starting Gemkeeper server at #{url}"
               puts "Press Ctrl+C to stop"
               manager.start_foreground
             else
               manager.start
-              puts "Geminabox server started at #{url}"
+              puts "Gemkeeper server started at #{url}"
               puts "PID: #{File.read(config.pid_file).strip}"
             end
           rescue ServerAlreadyRunningError => error

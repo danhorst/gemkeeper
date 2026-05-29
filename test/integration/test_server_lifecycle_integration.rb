@@ -60,7 +60,7 @@ class TestServerLifecycleIntegration < Minitest::Test
     assert status[:running]
     assert_kind_of Integer, status[:pid]
     assert status[:pid].positive?
-    assert_equal @config.geminabox_url, status[:url]
+    assert_equal @config.server_url, status[:url]
   end
 
   def test_server_start_twice_raises_error
@@ -116,7 +116,7 @@ class TestServerLifecycleIntegration < Minitest::Test
 
   def server_responds?(timeout: 5)
     deadline = Time.now + timeout
-    uri = URI(@config.geminabox_url)
+    uri = URI(@config.server_url)
 
     while Time.now < deadline
       begin

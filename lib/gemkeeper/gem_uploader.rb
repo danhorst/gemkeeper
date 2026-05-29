@@ -4,12 +4,12 @@ require "faraday"
 require "faraday/multipart"
 
 module Gemkeeper
-  # Encapsulates Geminabox's HTTP API so callers never construct multipart requests directly.
+  # Encapsulates the Gemkeeper server's upload HTTP API so callers never construct multipart requests directly.
   class GemUploader
-    attr_reader :geminabox_url
+    attr_reader :server_url
 
-    def initialize(geminabox_url)
-      @geminabox_url = geminabox_url
+    def initialize(server_url)
+      @server_url = server_url
     end
 
     def upload(gem_path)
@@ -28,7 +28,7 @@ module Gemkeeper
       handle_response(response, gem_path)
     rescue Faraday::ConnectionFailed, Faraday::TimeoutError
       raise ServerNotReachableError,
-            "Geminabox server is not reachable at #{@geminabox_url} — " \
+            "Gemkeeper server is not reachable at #{@server_url} — " \
             "run 'gemkeeper server start' or check 'gemkeeper server status'"
     end
 
@@ -46,7 +46,7 @@ module Gemkeeper
     private
 
     def connection
-      @connection ||= Faraday.new(url: @geminabox_url) do |f|
+      @connection ||= Faraday.new(url: @server_url) do |f|
         f.request :multipart
         f.request :url_encoded
         f.adapter Faraday::Adapter::NetHttp
