@@ -58,8 +58,8 @@ gems:
 ## CLI Commands
 
 - `gemkeeper version` - Print version
-- `gemkeeper server start` - Start Geminabox server
-- `gemkeeper server stop` - Stop Geminabox server
+- `gemkeeper server start` - Start the Gemkeeper server
+- `gemkeeper server stop` - Stop the Gemkeeper server
 - `gemkeeper server status` - Check server status
 - `gemkeeper sync` - Build and upload all configured gems
 - `gemkeeper sync <gem-name>` - Sync specific gem
@@ -88,8 +88,9 @@ GitHub Actions (`.github/workflows/release.yml`) then builds the gem and pushes 
 
 ```bash
 bundle install
-bundle exec rake test    # Run tests
-bundle exec rubocop      # Run linter
+bundle exec rake test           # Run tests
+bundle exec rubocop             # Run linter
+bundle exec rubycritic lib --no-browser  # Code quality score (target ≥ 90)
 ```
 
 ## Current Status
